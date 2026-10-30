@@ -1,0 +1,281 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Models & Schema Documentation
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (Must match request.auth.uid)
+    // Document Fields:
+    //   - userId: string (required, immutable, must equal request.auth.uid)
+    //   - coins: number (required, non-negative integer/number, >= 0, <= 1000000000)
+    //   - profile: map (optional, max 10 fields: displayName, photoURL, email, playerId, username, rating, bio)
+    //   - stats: map (optional, max 15 fields: levelsCompleted, matchesPlayed, matchesWon, matchesLost, streakDays, lastDailyDate, fastestTime, totalPuzzlesSolved, winRate)
+    //   - completedLevels: map (optional, max 2000 entries of level clear records {clearedAt, difficulty, bestTime})
+    //   - achievements: list or map (optional, max 100 entries of unlocked achievements)
+    //   - themes: map or list (optional, owned theme identifiers and active theme)
+    //   - settings: map (optional, max 20 fields: sound, volume, vibration, cheer, confetti, guide, speed, speedMul, theme, darkMode, eyeComfort)
+    //   - playerId: string (optional, 1-50 chars)
+    //   - username: string (optional, 1-50 chars)
+    //   - rating: number (optional, >= 0, <= 10000)
+    //   - createdAt: timestamp (optional, immutable)
+    //   - updatedAt: timestamp (optional)
+    //   - lastSyncedAt: timestamp (optional)
+    //
+    // Collection: rooms
+    // Document ID: {roomId} (Room identifier / room code)
+    // Document Fields:
+    //   - code: string (room code)
+    //   - lastActivity: number or timestamp (epoch timestamp of latest heartbeat)
+    //   - members: map (nested presence map of players and heartbeat metadata)
+    //   - Additional game state and sync properties
+    //
+    // Subcollection: tournaments/{weekId}/scores
+    // Document ID: {userId} (Player UID or local player id)
+    // Document Fields:
+    //   - uid: string (required player id)
+    //   - username: string (display name)
+    //   - photoURL: string (avatar URL)
+    //   - timeSec: number (required, > 0 and < 86400)
+    //   - runs: number (attempt count)
+    //   - createdAt: timestamp
+    //   - updatedAt: timestamp
+    //
+    // Collection: battles_queue
+    // Document ID: {userId} (Player UID or local player id)
+    // Document Fields:
+    //   - uid: string (must match document id {userId})
+    //   - name: string (player display name)
+    //   - joinedAt: number or timestamp (queue timestamp)
+    //   - puzzleIdx: number (puzzle index)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the request is from an authenticated user
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if authenticated user is the owner of this document path
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Validate required fields exist in request resource data
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // Validate that only allowed fields exist in the map
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // Validate that immutable fields are not modified on update
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // Ensure createdAt is preserved if already set on update
+    function isCreatedAtPreserved() {
+      return !('createdAt' in resource.data) ||
+        (('createdAt' in request.resource.data) && request.resource.data.createdAt == resource.data.createdAt);
+    }
+
+    // Optional string validator (if present, must be string and within [minLen, maxLen])
+    function isValidOptionalString(mapData, field, minLen, maxLen) {
+      return !(field in mapData) ||
+        (mapData[field] is string && mapData[field].size() >= minLen && mapData[field].size() <= maxLen);
+    }
+
+    // Optional number validator (if present, must be number and within [minVal, maxVal])
+    function isValidOptionalNumber(mapData, field, minVal, maxVal) {
+      return !(field in mapData) ||
+        (mapData[field] is number && mapData[field] >= minVal && mapData[field] <= maxVal);
+    }
+
+    // Optional boolean validator
+    function isValidOptionalBool(mapData, field) {
+      return !(field in mapData) || (mapData[field] is bool);
+    }
+
+    // Validate player profile map
+    function isValidProfile(profile) {
+      return profile is map &&
+        profile.keys().size() <= 10 &&
+        profile.keys().hasOnly(['displayName', 'photoURL', 'email', 'playerId', 'username', 'rating', 'bio', 'createdAt', 'updatedAt']) &&
+        isValidOptionalString(profile, 'displayName', 1, 100) &&
+        isValidOptionalString(profile, 'photoURL', 1, 500) &&
+        isValidOptionalString(profile, 'email', 3, 200) &&
+        isValidOptionalString(profile, 'username', 1, 50) &&
+        isValidOptionalString(profile, 'playerId', 1, 50) &&
+        isValidOptionalString(profile, 'bio', 0, 250) &&
+        isValidOptionalNumber(profile, 'rating', 0, 10000);
+    }
+
+    // Validate stats map
+    function isValidStats(stats) {
+      return stats is map &&
+        stats.keys().size() <= 15 &&
+        stats.keys().hasOnly([
+          'levelsCompleted', 'matchesPlayed', 'matchesWon', 'matchesLost',
+          'streakDays', 'lastDailyDate', 'fastestTime', 'totalPuzzlesSolved', 'winRate'
+        ]) &&
+        isValidOptionalNumber(stats, 'levelsCompleted', 0, 100000) &&
+        isValidOptionalNumber(stats, 'matchesPlayed', 0, 100000) &&
+        isValidOptionalNumber(stats, 'matchesWon', 0, 100000) &&
+        isValidOptionalNumber(stats, 'matchesLost', 0, 100000) &&
+        isValidOptionalNumber(stats, 'streakDays', 0, 10000) &&
+        isValidOptionalNumber(stats, 'fastestTime', 0, 86400) &&
+        isValidOptionalNumber(stats, 'totalPuzzlesSolved', 0, 100000) &&
+        isValidOptionalNumber(stats, 'winRate', 0, 100) &&
+        (!('lastDailyDate' in stats) || stats.lastDailyDate == null || (stats.lastDailyDate is string && stats.lastDailyDate.size() <= 30));
+    }
+
+    // Validate themes map or list
+    function isValidThemes(themes) {
+      return (themes is map &&
+        themes.keys().size() <= 5 &&
+        themes.keys().hasOnly(['owned', 'active']) &&
+        (!('owned' in themes) || (themes.owned is list && themes.owned.size() <= 50)) &&
+        (!('active' in themes) || (themes.active is string && themes.active.size() <= 50))) ||
+        (themes is list && themes.size() <= 50);
+    }
+
+    // Validate settings map
+    function isValidSettings(settings) {
+      return settings is map &&
+        settings.keys().size() <= 20 &&
+        settings.keys().hasOnly([
+          'sound', 'volume', 'reducedMotion', 'vibration', 'cheer',
+          'confetti', 'guide', 'speed', 'speedMul', 'theme', 'darkMode', 'eyeComfort'
+        ]) &&
+        isValidOptionalBool(settings, 'sound') &&
+        isValidOptionalBool(settings, 'reducedMotion') &&
+        isValidOptionalBool(settings, 'vibration') &&
+        isValidOptionalBool(settings, 'cheer') &&
+        isValidOptionalBool(settings, 'confetti') &&
+        isValidOptionalBool(settings, 'guide') &&
+        isValidOptionalBool(settings, 'darkMode') &&
+        isValidOptionalBool(settings, 'eyeComfort') &&
+        isValidOptionalNumber(settings, 'volume', 0, 100) &&
+        isValidOptionalNumber(settings, 'speedMul', 0, 10) &&
+        isValidOptionalString(settings, 'speed', 1, 20) &&
+        isValidOptionalString(settings, 'theme', 1, 50);
+    }
+
+    // Domain validator for /users/{userId} document
+    function isValidUserDoc(data, userId) {
+      return hasRequiredFields(['userId', 'coins']) &&
+        hasOnlyAllowedFields([
+          'userId', 'coins', 'profile', 'stats', 'completedLevels',
+          'achievements', 'themes', 'settings', 'playerId', 'username',
+          'rating', 'createdAt', 'updatedAt', 'lastSyncedAt'
+        ]) &&
+        data.keys().size() <= 15 &&
+        data.userId is string &&
+        data.userId == userId &&
+        data.userId == request.auth.uid &&
+        data.coins is number &&
+        data.coins >= 0 &&
+        data.coins <= 1000000000 &&
+        (!('profile' in data) || isValidProfile(data.profile)) &&
+        (!('stats' in data) || isValidStats(data.stats)) &&
+        (!('completedLevels' in data) || (data.completedLevels is map && data.completedLevels.size() <= 2000)) &&
+        (!('achievements' in data) || (
+          (data.achievements is list && data.achievements.size() <= 100) ||
+          (data.achievements is map && data.achievements.size() <= 100)
+        )) &&
+        (!('themes' in data) || isValidThemes(data.themes)) &&
+        (!('settings' in data) || isValidSettings(data.settings)) &&
+        isValidOptionalString(data, 'username', 1, 50) &&
+        isValidOptionalString(data, 'playerId', 1, 50) &&
+        isValidOptionalNumber(data, 'rating', 0, 10000) &&
+        (!('createdAt' in data) || data.createdAt is timestamp) &&
+        (!('updatedAt' in data) || data.updatedAt is timestamp) &&
+        (!('lastSyncedAt' in data) || data.lastSyncedAt is timestamp);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Root-level default deny: Deny all reads and writes to any unmatched collection
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 1. User game data & cloud sync: /users/{userId}
+    match /users/{userId} {
+      // Only the authenticated owner can read their own game data
+      allow read: if isOwner(userId);
+
+      // Create: Authenticated owner only, must satisfy strict schema and payload integrity
+      allow create: if isOwner(userId) && isValidUserDoc(request.resource.data, userId);
+
+      // Update: Authenticated owner only, cannot bypass schema, userId is immutable
+      allow update: if isOwner(userId) &&
+                       isValidUserDoc(request.resource.data, userId) &&
+                       areImmutableFieldsUnchanged(['userId']) &&
+                       isCreatedAtPreserved();
+
+      // Delete: Authenticated owner only (allows account deletion / reset)
+      allow delete: if isOwner(userId);
+    }
+
+    // 2. Play with Friends (Real-time Multiplayer Rooms): /rooms/{roomId}
+    match /rooms/{roomId} {
+      // Full read and write access for both authenticated players and guest players
+      // to join rooms, update presence (nested members map), send heartbeats, and leave
+      allow read, write: if true;
+    }
+
+    // 3. Weekly Tournament (Global Live Leaderboard): /tournaments/{weekId}/scores/{userId}
+    match /tournaments/{weekId} {
+      // Allow reading tournament root metadata
+      allow read: if true;
+      allow write: if false;
+
+      match /scores/{userId} {
+        // Anyone can view the tournament leaderboard
+        allow read: if true;
+
+        // Create score entry: must have valid timeSec within range and allowed leaderboard fields
+        allow create: if request.resource.data.timeSec is number &&
+                         request.resource.data.timeSec > 0 &&
+                         request.resource.data.timeSec < 86400 &&
+                         request.resource.data.keys().hasOnly([
+                           'uid', 'username', 'photoURL', 'timeSec', 'runs', 'createdAt', 'updatedAt'
+                         ]);
+
+        // Update score entry: must have valid timeSec within range and allowed leaderboard fields
+        allow update: if request.resource.data.timeSec is number &&
+                         request.resource.data.timeSec > 0 &&
+                         request.resource.data.timeSec < 86400 &&
+                         request.resource.data.keys().hasOnly([
+                           'uid', 'username', 'photoURL', 'timeSec', 'runs', 'createdAt', 'updatedAt'
+                         ]);
+
+        // Leaderboard scores cannot be arbitrarily deleted by clients
+        allow delete: if false;
+      }
+    }
+
+    // 4. Battle (1v1 Live Matchmaking Queue): /battles_queue/{userId}
+    match /battles_queue/{userId} {
+      // Anyone can read queue entries to find matchmaking opponents
+      allow read: if true;
+
+      // Allow join (create), update, or dequeue (delete)
+      allow write: if request.resource.data == null ||
+                      (request.resource.data.keys().hasOnly(['uid', 'name', 'joinedAt', 'puzzleIdx']) &&
+                       request.resource.data.uid == userId);
+    }
+  }
+}

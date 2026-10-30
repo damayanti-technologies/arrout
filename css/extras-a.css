@@ -1,0 +1,25 @@
+.card-room{background:linear-gradient(135deg,#E4F8EE,#C9EFD9)!important}
+.room-card{background:#fff;border-radius:28px;padding:26px 22px;box-shadow:var(--clay-shadow);margin-top:10px}
+.room-view{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px}
+.room-view[hidden]{display:none}
+.room-h{font-family:var(--font-serif);font-size:1.35rem;color:var(--text-navy)}
+.room-p{color:var(--text-muted);font-size:.88rem;line-height:1.5}
+.room-btn{width:100%;max-width:280px}
+.room-btn-alt,.room-btn-danger{border:0;border-radius:20px;padding:14px 20px;font-weight:800;font-size:.9rem;cursor:pointer;font-family:inherit;background:#EEF3FB;color:var(--text-navy)}
+.room-btn-danger{background:#FDE8E8;color:#C53030}
+.room-code-input{width:200px;text-align:center;font-size:1.8rem;font-weight:800;letter-spacing:6px;padding:12px 8px;border-radius:16px;border:2px solid #D7E3F6;background:#F6F9FE;color:var(--text-navy);text-transform:uppercase;font-family:inherit}
+.room-code-input:focus{outline:none;border-color:#4A93F0}
+.room-error{color:#C53030;font-size:.82rem;font-weight:700}
+.room-label{font-size:.78rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted)}
+.room-code{font-size:2.6rem;font-weight:800;letter-spacing:8px;text-indent:8px;color:#2F6FC4;font-family:var(--font-sans)}
+#room-share-block{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%}
+.room-link{width:100%;max-width:280px;font-size:.72rem;padding:9px 10px;border-radius:12px;border:1px solid #D7E3F6;background:#F6F9FE;color:var(--text-muted);text-align:center}
+.room-players-head{font-size:.88rem;color:var(--text-navy);margin-top:4px}
+.room-players{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.room-chip{background:#EEF3FB;color:var(--text-navy);border-radius:14px;padding:7px 12px;font-size:.82rem;font-weight:700}
+.room-chip.me{background:#DDF3E8;color:#1F7A55}
+
+.btn-room-refresh{background:#EEF3FB;border:1px solid #D7E3F6;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-navy);transition:transform .2s ease,background .2s ease;padding:0}
+.btn-room-refresh:active{transform:scale(.9)}
+.btn-room-refresh.spinning svg{animation:roomSpin .6s linear infinite}
+@keyframes roomSpin{100%{transform:rotate(360deg)}}

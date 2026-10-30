@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "users": {
+      "$userId": {
+        ".read": "auth != null && auth.uid === $userId",
+        ".write": "auth != null && auth.uid === $userId",
+        ".validate": "newData.hasChildren(['userId', 'coins']) && newData.child('userId').val() === $userId"
+      }
+    },
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true,
+        ".validate": "newData.hasChildren(['code'])"
+      }
+    },
+    "tournaments": {
+      "$weekId": {
+        "scores": {
+          ".read": true,
+          "$userId": {
+            ".write": "newData.hasChildren(['timeSec']) && newData.child('timeSec').isNumber() && newData.child('timeSec').val() > 0 && newData.child('timeSec').val() < 86400"
+          }
+        }
+      }
+    },
+    "battles_queue": {
+      ".read": true,
+      "$userId": {
+        ".write": true
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

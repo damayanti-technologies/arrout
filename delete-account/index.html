@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARROUT — Request Account & Data Deletion</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏹</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FAF6F0;
+      --card-bg: #FFFFFF;
+      --text-main: #1E293B;
+      --text-navy: #152642;
+      --text-muted: #64748B;
+      --accent-purple: #6C5CE7;
+      --accent-purple-hover: #5846E0;
+      --accent-purple-light: #ECE8FD;
+      --danger-red: #EF4444;
+      --danger-bg: #FEF2F2;
+      --danger-border: #FCA5A5;
+      --border-color: #E2E8F0;
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.7;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 780px;
+      background: var(--card-bg);
+      padding: 48px 40px;
+      border-radius: var(--radius);
+      box-shadow: 0 12px 35px rgba(160, 175, 200, 0.16);
+      border: 1px solid var(--border-color);
+    }
+
+    .header-block {
+      border-bottom: 2px solid #F1F5F9;
+      padding-bottom: 24px;
+      margin-bottom: 30px;
+    }
+
+    .brand-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-purple-light);
+      color: var(--accent-purple);
+      padding: 5px 14px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      color: var(--text-navy);
+      font-size: 2.1rem;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      color: var(--text-navy);
+      font-size: 1.3rem;
+      margin-top: 28px;
+      margin-bottom: 12px;
+    }
+
+    p {
+      margin-bottom: 14px;
+      font-size: 0.96rem;
+      color: #334155;
+    }
+
+    ul, ol {
+      margin-left: 20px;
+      margin-bottom: 18px;
+      color: #334155;
+    }
+
+    li {
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .action-card {
+      background: #F8FAFC;
+      border: 2px solid #E2E8F0;
+      border-radius: 20px;
+      padding: 28px;
+      margin: 28px 0;
+      text-align: center;
+    }
+
+    .action-card h3 {
+      color: var(--text-navy);
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
+    .action-card p {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 540px;
+      margin: 0 auto 20px auto;
+    }
+
+    .btn-mail {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #6C5CE7, #8B85F8);
+      color: #FFFFFF !important;
+      font-size: 1.05rem;
+      font-weight: 700;
+      padding: 16px 36px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-mail:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(108, 92, 231, 0.45);
+    }
+
+    .btn-mail:active {
+      transform: translateY(0);
+    }
+
+    .warning-box {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: 16px;
+      padding: 18px 22px;
+      margin: 24px 0;
+    }
+
+    .warning-box strong {
+      color: #B91C1C;
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.98rem;
+    }
+
+    .warning-box p {
+      color: #7F1D1D;
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    .preview-box {
+      background: #1E293B;
+      color: #E2E8F0;
+      border-radius: 14px;
+      padding: 20px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 16px 0;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #334155;
+      color: #F8FAFC;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: #475569;
+    }
+
+    .footer-links {
+      margin-top: 36px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .footer-links a {
+      color: var(--accent-purple);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px 12px;
+      }
+      .container {
+        padding: 28px 20px;
+      }
+      h1 {
+        font-size: 1.65rem;
+      }
+      .btn-mail {
+        width: 100%;
+        padding: 14px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-block">
+      <div class="brand-tag">ARROUT</div>
+      <h1>Delete Your Data</h1>
+      <div class="subtitle">ARROUT operates locally on your device by default, with optional Google Cloud backup via Google Sign-In. You have full control to delete all local and cloud data at any time.</div>
+    </div>
+    <h2>Delete it yourself (instant)</h2>
+    <ol>
+      <li><strong>In the game:</strong> open Settings and tap <em>Reset Local Progress</em> twice to confirm. This erases your name, coins, progress, themes, streaks and settings.</li>
+      <li><strong>In a browser:</strong> clear the site data for the game in your browser settings.</li>
+      <li><strong>In the Android app:</strong> clear the app’s storage in Android settings, or uninstall the app.</li>
+    </ol>
+    <div class="warning-box"><strong>⚠️ This cannot be undone</strong><p>Because nothing is saved online, deleted progress, coins and themes cannot be restored.</p></div>
+    <h2>What gets deleted</h2>
+    <ul>
+      <li><strong>Profile:</strong> player name and random player ID.</li>
+      <li><strong>Progress:</strong> cleared levels, best times, daily streak, weekly puzzle time, battle record and achievements.</li>
+      <li><strong>Coins and themes</strong> and your <strong>settings</strong>.</li>
+    </ul>
+    <h2>Questions or a request to us</h2>
+    <p>We do not hold any personal data about you, so there is nothing to remove on our side. If you still want to ask us something, or you believe we hold information about you, email us:</p>
+    <div class="action-card">
+      <a class="btn-mail" href="mailto:web.sannivesham@gmail.com?subject=ARROUT%20-%20Account%20%26%20Data%20Deletion%20Request&body=Hello%20ARROUT%20Support%20Team%2C%0A%0AI%20am%20requesting%20the%20permanent%20deletion%20of%20my%20ARROUT%20game%20account%20and%20all%20associated%20data.%0A%0APlease%20find%20my%20account%20details%20below%3A%0A-%20In-Game%20Username%20%2F%20Display%20Name%3A%20%0A-%20Registered%20Email%20Address%3A%20%0A-%20Player%20ID%20%28if%20known%29%3A%20%0A%0AI%20understand%20that%20this%20action%20is%20irreversible%20and%20will%20delete%20all%20my%20game%20progress%2C%20coins%2C%20scores%2C%20and%20inventory.%0A%0AThank%20you.">✉️ Email the developer</a>
+    </div>
+    <p style="font-size:.85rem;">Third parties that serve the page (Google Fonts and GitHub Pages) keep their own technical logs. See the <a href="../privacy-policy/#sec-8">privacy policy</a>.</p>
+    <div class="footer-links">
+      <span>Developer: <strong>reshwanth</strong></span>
+      <span><a href="../privacy-policy/">View Privacy Policy</a></span>
+    </div>
+  </div>
+</body>
+</html>
