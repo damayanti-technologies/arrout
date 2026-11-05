@@ -124,30 +124,8 @@ body.screen-home-active {
   gap: 10px;
 }
 
-.coin-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #FFF5E8;
-  border: 1px solid rgba(245, 158, 11, 0.18);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
-  padding: 6px 14px;
-  border-radius: 24px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--text-navy);
-}
-
-.coin-icon-gold {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FBBF24, #D97706);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #FFF;
-  font-size: 0.65rem;
+.coin-pill, .coin-icon-gold {
+  display: none !important;
 }
 
 .avatar-thumbnail {
@@ -1080,8 +1058,6 @@ body{background:#EAF2FF}
 .app-header{height:60px;padding:12px 18px 0}
 .brand-subtitle{display:none}
 .brand-title{font-weight:700;letter-spacing:4px;font-size:1.2rem;color:#3F6FD8}
-.coin-pill{background:#DFF0FF;border:none;box-shadow:none;color:#26558F}
-.coin-icon-gold{background:linear-gradient(135deg,#6EC6FF,#4D8DF0)}
 .avatar-thumbnail{background:#DCE6FF}
 .app-viewport,body.screen-home-active .app-viewport,.mobile-app-frame.screen-home-active .app-viewport{padding:8px 18px 24px}
 #screen-home.active{gap:16px;padding-top:34px}

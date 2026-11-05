@@ -1,7 +1,7 @@
 /* ---- js/storage.js ---- */
 /**
  * ARROUT - Persistent storage (localStorage only, nothing leaves the device).
- * Holds coins, cleared levels, stats, achievements and the weekly-tournament record.
+ * Holds cleared levels, stats, achievements and the weekly-tournament record.
  * Themes live in js/themes.js (key arrout_themes_v1), settings in js/settings.js (arrout_settings_v1),
  * daily-challenge progress in js/modes.js (arrout_daily_v1). RESET_KEYS lists everything "Reset" must clear.
  */
@@ -10,15 +10,13 @@ const STORAGE_KEY = 'arrow_escape_player_data_v1';
 const RESET_KEYS = [STORAGE_KEY, 'arrout_settings_v1', 'arrout_themes_v1', 'arrout_daily_v1', 'arrout_battle_v1', 'arrout_last_quote'];
 
 const DEFAULT_ACHIEVEMENTS = [
-  { id: 'first_escape', name: 'First Freedom', desc: 'Clear your first arrow puzzle.', reward: 50, unlocked: false },
-  { id: 'novice_solver', name: 'Novice Solver', desc: 'Complete 5 different levels.', reward: 100, unlocked: false },
-  { id: 'arrow_master', name: 'Arrow Maestro', desc: 'Complete 25 different levels.', reward: 250, unlocked: false },
-  { id: 'speed_demon', name: 'Speed Demon', desc: 'Clear any puzzle in under 15 seconds.', reward: 150, unlocked: false },
-  { id: 'pvp_first_win', name: 'First Blood', desc: 'Win your first Battle.', reward: 100, unlocked: false },
-  { id: 'pvp_champion', name: 'Duelist Veteran', desc: 'Win 10 Battles.', reward: 300, unlocked: false },
-  { id: 'tournament_qualifier', name: 'Contender', desc: 'Qualify for the Weekly Tournament by clearing 10 different levels in a week.', reward: 200, unlocked: false },
-  { id: 'fashionista', name: 'Stylist', desc: 'Unlock your first theme.', reward: 100, unlocked: false },
-  { id: 'royal_collector', name: 'Theme Collector', desc: 'Own every theme in the shop.', reward: 500, unlocked: false }
+  { id: 'first_escape', name: 'First Freedom', desc: 'Clear your first arrow puzzle.', unlocked: false },
+  { id: 'novice_solver', name: 'Novice Solver', desc: 'Complete 5 different levels.', unlocked: false },
+  { id: 'arrow_master', name: 'Arrow Maestro', desc: 'Complete 25 different levels.', unlocked: false },
+  { id: 'speed_demon', name: 'Speed Demon', desc: 'Clear any puzzle in under 15 seconds.', unlocked: false },
+  { id: 'pvp_first_win', name: 'First Blood', desc: 'Win your first Battle.', unlocked: false },
+  { id: 'pvp_champion', name: 'Duelist Veteran', desc: 'Win 10 Battles.', unlocked: false },
+  { id: 'tournament_qualifier', name: 'Contender', desc: 'Qualify for the Weekly Tournament by clearing 10 different levels in a week.', unlocked: false }
 ];
 
 class StorageManager {
@@ -42,7 +40,6 @@ class StorageManager {
     return {
       playerId: randomId,
       username: 'ArrowPilot_' + randomId.slice(-4),
-      coins: 250, // starting bonus
       rating: 1200,
       stats: {
         levelsCompleted: 0,
@@ -69,7 +66,7 @@ class StorageManager {
     const merged = { ...defaults, ...saved };
     merged.stats = { ...defaults.stats, ...(saved.stats || {}) };
     merged.settings = { ...defaults.settings, ...(saved.settings || {}) };
-    if (typeof merged.coins !== 'number' || !isFinite(merged.coins) || merged.coins < 0) merged.coins = 0;
+    delete merged.coins;
     if (!merged.completedLevels || typeof merged.completedLevels !== 'object') merged.completedLevels = {};
     if (!Array.isArray(merged.tournamentQualifyingLevels)) merged.tournamentQualifyingLevels = [];
     // keep every default achievement; carry over the saved unlocked flag
@@ -110,16 +107,13 @@ class StorageManager {
     }
   }
 
-  // Level clear: coins only for the first clear of each level (no farming)
+  // Level clear
   recordLevelCompletion(levelId, difficulty = 'normal', completionTimeSec = 0) {
     this.checkWeeklyReset();
     const isFirstTime = !this.data.completedLevels[levelId];
-    let earnedCoins = 0;
 
     if (isFirstTime) {
-      earnedCoins = 10;
       this.data.completedLevels[levelId] = { clearedAt: Date.now(), difficulty, bestTime: completionTimeSec };
-      this.data.coins += earnedCoins;
       this.data.stats.levelsCompleted = Object.keys(this.data.completedLevels).length;
     } else {
       const rec = this.data.completedLevels[levelId];
@@ -142,10 +136,10 @@ class StorageManager {
     if (completionTimeSec > 0 && completionTimeSec <= 15) this.unlockAchievement('speed_demon');
 
     this.save();
-    return { isFirstTime, earnedCoins };
+    return { isFirstTime };
   }
 
-  // Battle result (coins are handled by the pot in coins.js, so none are added here)
+  // Battle result
   recordBattle(won, opponentRating = 1200) {
     const s = this.data.stats;
     s.matchesPlayed = (s.matchesPlayed || 0) + 1;
@@ -177,10 +171,9 @@ class StorageManager {
     const ach = this.data.achievements.find(a => a.id === achId);
     if (ach && !ach.unlocked) {
       ach.unlocked = true;
-      this.data.coins += ach.reward;
       this.save();
-      if (window.soundEngine) window.soundEngine.playCoin();
-      if (window.showToast) window.showToast(`🏆 Achievement Unlocked: ${ach.name} (+${ach.reward} Coins)!`);
+      if (window.soundEngine && window.soundEngine.playVictory) window.soundEngine.playVictory();
+      if (window.showToast) window.showToast(`🏆 Achievement Unlocked: ${ach.name}!`);
       return true;
     }
     return false;

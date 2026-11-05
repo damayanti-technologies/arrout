@@ -6,7 +6,6 @@
 <meta name="theme-color" content="#FAF6F0">
 <meta name="description" content="Arrout: a calm arrow-escape puzzle game. Tap the arrows in the right order to clear the board.">
 <title>Arrout</title>
-<link rel="icon" type="image/png" href="assets/dolphin.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Righteous&display=swap">
@@ -16,6 +15,12 @@
 <link rel="stylesheet" href="css/extras-b.css">
 <link rel="stylesheet" href="css/extras-c.css">
 <!-- Level data: deferred so parsing the page is not blocked; everything reads it lazily at play time. -->
+<style>
+/* dolphin removed: speech bubble now sits centred above the PLAY card */
+.play-fixed .quote-bubble{left:50%!important;right:auto!important;transform:translateX(-50%);width:230px!important;top:auto!important;bottom:calc(100% + 14px)!important;text-align:center}
+.play-fixed .quote-bubble::after{left:50%!important;top:auto!important;bottom:-9px!important;margin:0 0 0 -9px!important;border-style:solid!important;border-width:9px 9px 0 9px!important;border-color:#fff transparent transparent transparent!important}
+.dol-group{pointer-events:none}
+</style>
 <script src="levels-1000.js" defer></script>
 <script src="levels-daily.js" defer></script>
 <script src="levels-room.js" defer></script>
@@ -46,10 +51,6 @@
       </div>
 
       <div class="header-right">
-        <div class="coin-pill">
-          <div class="coin-icon-gold">★</div>
-          <span class="user-coin-count">2450</span>
-        </div>
         <div class="avatar-thumbnail user-avatar-display" data-nav="profile">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#334155">
             <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" />
@@ -81,9 +82,7 @@
         </div>
         <div class="home-hero">
           <h1 class="home-logo">ARROUT</h1>
-          <div class="dolphin-stage">
-          </div>
-
+          
         </div>
 <div class="play-fixed play-holder">
 <div class="mode-grid-card card-play" data-nav="puzzle">
@@ -98,7 +97,6 @@
             </div>
 </div>
 <div class="dol-group">
-<img id="home-dolphin" class="home-dolphin" alt="" src="assets/dolphin.png">
 <div class="quote-bubble" id="home-quote">Can you solve this puzzle?</div>
 </div>
 </div>
@@ -196,30 +194,9 @@
               <div class="card-arrow-circle">→</div>
             </div>
           </div>
-
-          <!-- Card 5: Shop Now -->
-          <div class="mode-grid-card card-shop card-shop-now" data-nav="shop">
-            <div class="card-top-content">
-              <div class="card-3d-icon">
-                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
-                  <path d="M12 20h30l-3 22a4 4 0 0 1-4 3H19a4 4 0 0 1-4-3L12 20z" fill="#A78BFA"/>
-                  <path d="M20 20v-3a7 7 0 0 1 14 0v3" stroke="#6D4AD8" stroke-width="3" stroke-linecap="round" fill="none"/>
-                  <circle cx="27" cy="31" r="6.5" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
-                  <path d="M27 27.5v7" stroke="#D97706" stroke-width="2" stroke-linecap="round"/>
-                </svg>
-              </div>
-              <div class="card-title-col">
-                <div class="card-heading">Shop Now</div>
-              </div>
-            </div>
-            <div class="card-bottom-row">
-              <div class="card-desc-text">Buy themes with coins</div>
-              <div class="card-arrow-circle">→</div>
-            </div>
-          </div>
 </div>
 </div>
-<div class="home-dots"><i class="on"></i><i></i><i></i><i></i><i></i></div></section>
+<div class="home-dots"><i class="on"></i><i></i><i></i><i></i></div></section>
       <!-- ================= LEVEL GAMEPLAY SCREEN (EXACT MATCH TO SCREENSHOT 2) ================= -->
       <section id="screen-puzzle" class="app-screen">
         
@@ -238,10 +215,6 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div class="coin-pill" style="padding: 4px 10px; font-size: 0.85rem;">
-              <div class="coin-icon-gold" style="width: 16px; height: 16px; font-size: 0.55rem;">★</div>
-              <span class="user-coin-count">2450</span>
-            </div>
             <button class="btn-circle-action" aria-label="Settings" data-nav="settings" style="width: 36px; height: 36px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -271,7 +244,6 @@
               <span id="cheer-text" class="cheer-text"></span>
               <div class="cheer-steps"><i></i><i></i><i></i></div>
             </div>
-            <img class="cheer-dolphin" alt="">
           </div>
         </div>
 
@@ -343,7 +315,7 @@
           <div id="matchmaking-radar" class="radar-spinner-soft"></div>
           <h3 id="matchmaking-status-text" style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--text-navy); margin-bottom: 8px;">Ready to Duel</h3>
           <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;">
-            Race online players or rivals on the same puzzle in real-time. Each side stakes a 50-coin entry fee and the first to clear every arrow takes the pot!
+            Race a computer-controlled rival on the same puzzle. The first to clear every arrow wins the match!
           </p>
 
           <button id="btn-start-matchmaking" class="btn-primary-clay">FIND OPPONENT</button>
@@ -390,14 +362,7 @@
               <input id="room-link" class="room-link" readonly aria-label="Room link">
               <button id="room-copy-code" class="room-btn room-btn-alt">COPY CODE</button>
             </div>
-            <div class="room-players-head" style="display:flex;align-items:center;justify-content:center;gap:8px;">
-              <span>Players in room: <b id="room-count">1</b></span>
-              <button id="room-refresh-btn" type="button" aria-label="Refresh players list" title="Refresh players" class="btn-room-refresh">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/>
-                </svg>
-              </button>
-            </div>
+            <div class="room-players-head">Players in room: <b id="room-count">1</b></div>
             <div id="room-players" class="room-players"></div>
             <p id="room-wait" class="room-p"></p>
             <p id="room-local-note" class="room-p" hidden style="font-size:.78rem;color:#B45309;">Offline mode: this build has no game server, so a friend can only join from another tab or window of this same browser.</p>
@@ -447,28 +412,6 @@
         <div id="tournament-leaderboard-rows" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </section>
 
-      <!-- ================= CUSTOMIZATION SHOP ================= -->
-      <section id="screen-shop" class="app-screen">
-        <div class="screen-header-bar">
-          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
-          <h2 class="screen-main-title">Customization Shop</h2>
-          <div class="coin-pill">
-            <div class="coin-icon-gold">★</div>
-            <span class="user-coin-count">2450</span>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 4px;">
-          <button class="shop-tab active" data-cat="themes">Themes</button>
-          <button class="shop-tab" data-cat="skins">Arrows</button>
-          <button class="shop-tab" data-cat="avatars">Avatars</button>
-          <button class="shop-tab" data-cat="frames">Frames</button>
-          <button class="shop-tab" data-cat="effects">Effects</button>
-        </div>
-
-        <div id="shop-items-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;"></div>
-      </section>
-
       <!-- ================= PLAYER PROFILE ================= -->
       <section id="screen-profile" class="app-screen">
         <div class="screen-header-bar">
@@ -485,9 +428,6 @@
           <div id="profile-name-msg" class="profile-name-msg" aria-live="polite"></div>
           <div id="profile-player-id" style="font-size: 0.75rem; color: var(--text-muted);">ID: AE-000000</div>
         </div>
-
-        <!-- Google Cloud Save & Auth Box -->
-        <div id="profile-google-auth-box"></div>
 
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
           <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
@@ -525,7 +465,7 @@
           <h2 id="daily-challenge-date" style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-navy); margin-bottom: 8px;">2026-10-15</h2>
           <div id="daily-info" class="daily-info"></div>
           <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; margin-bottom: 16px;">
-            Every day brings a unique deterministic puzzle! Solve today's challenge to earn 50 bonus coins and build your streak.
+            Every day brings a unique deterministic puzzle! Solve today's challenge to build your streak.
           </p>
           <div style="margin-bottom: 20px; font-weight: 800; color: #059669;">
             🔥 Current Streak: <span id="daily-streak-count">0</span> Days
@@ -577,7 +517,7 @@
           <div style="margin-bottom: 24px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
             <b>About ARROUT:</b><br>
             Version 2.1.0<br>
-            Your progress is stored locally on this device and can optionally sync to Google Cloud via Google Sign-In.
+            Your progress and best times are stored on this device only.
           </div>
 
           <button id="btn-reset-data" style="width: 100%; background: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer;">
@@ -607,10 +547,6 @@
             <div style="font-size: 0.72rem; color: var(--text-muted);">MOVES</div>
             <div id="victory-stat-moves" style="font-weight: 800; font-size: 1.1rem; color: var(--text-navy);">0</div>
           </div>
-          <div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">REWARD</div>
-            <div id="victory-stat-coins" style="font-weight: 800; font-size: 1.1rem; color: var(--accent-gold);">+10 Coins</div>
-          </div>
         </div>
         <button id="btn-victory-next" class="btn-primary-clay">CONTINUE</button>
       </div>
@@ -625,10 +561,6 @@
           <div>
             <div style="font-size: 0.72rem; color: var(--text-muted);">RATING</div>
             <div id="pvp-rating-change" style="font-weight: 800; font-size: 1rem; color: #10B981;">+32 MMR</div>
-          </div>
-          <div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">REWARD</div>
-            <div id="pvp-coins-earned" style="font-weight: 800; font-size: 1rem; color: var(--accent-gold);">+30 Coins</div>
           </div>
         </div>
         <div style="display: flex; gap: 10px;">
@@ -650,25 +582,15 @@
 <script src="js/arrow-path-generator.js"></script>
 <script src="js/arrow-path-engine.js"></script>
 <script src="js/storage.js"></script>
-<!-- Firebase & Cloud Sync (Local + Google Cloud) -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js"></script>
-<script src="js/firebase-sync.js"></script>
 <script src="js/tournament.js"></script>
 <script src="js/app.js"></script>
 <script src="js/intro.js"></script>
 <script src="js/carousel.js"></script>
 <script src="js/quote.js"></script>
-<script src="js/dolphin-sync.js"></script>
 <script src="js/carousel-fade.js"></script>
 <script src="js/rooms.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/modes.js"></script>
-<script src="js/coins.js"></script>
 <script src="js/themes.js"></script>
-<script src="js/theme-art.js"></script>
-<script src="js/puzzle-theme.js"></script>
 </body>
 </html>

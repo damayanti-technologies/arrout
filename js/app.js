@@ -125,13 +125,7 @@ class ArroutApp {
   }
 
   updateHUD() {
-    const data = (window.storageManager && window.storageManager.data) || { coins: 0, username: 'ArrowPilot' };
-    const coinsVal = Number(data.coins ?? 0).toLocaleString();
-    document.querySelectorAll('.user-coin-count').forEach(el => el.textContent = coinsVal);
-    const homeCoin = document.getElementById('home-coin-count');
-    if (homeCoin) homeCoin.textContent = coinsVal;
-    const shopCoin = document.getElementById('shop-coins');
-    if (shopCoin) shopCoin.textContent = coinsVal;
+    const data = (window.storageManager && window.storageManager.data) || { username: 'ArrowPilot' };
     document.querySelectorAll('.user-name-display').forEach(el => el.textContent = data.username);
     const inp = document.getElementById('profile-username-input');
     if (inp && document.activeElement !== inp && data.username) inp.value = data.username;
@@ -357,7 +351,6 @@ class ArroutApp {
             title: 'Tournament run done!',
             time: `${stats.totalTime}s`,
             moves: stats.moves,
-            coinsText: `Best: ${rec.timeSec}s`,
             nextAction: () => this.navigate('tournament', null, { replace: true })
           });
           return;
@@ -367,7 +360,6 @@ class ArroutApp {
           title: `Level ${this.currentLevelNum} Cleared!`,
           time: `${stats.totalTime}s`,
           moves: stats.moves,
-          earnedCoins: res.earnedCoins,
           nextAction: () => {
             const nextLvl = Number(this.currentLevelNum) + 1;
             if (nextLvl <= 1000) {
@@ -430,7 +422,7 @@ class ArroutApp {
     modal.classList.add('open');
   }
 
-  showVictoryModal({ title, time, moves, earnedCoins, coinsText, nextAction }) {
+  showVictoryModal({ title, time, moves, nextAction }) {
     const modal = document.getElementById('modal-victory');
     if (!modal) return;
 
@@ -444,7 +436,6 @@ class ArroutApp {
     document.getElementById('victory-title').textContent = title;
     document.getElementById('victory-stat-time').textContent = time;
     document.getElementById('victory-stat-moves').textContent = moves;
-    document.getElementById('victory-stat-coins').textContent = coinsText || `+${earnedCoins} Coins`;
 
     modal.classList.add('open');
     const nextBtn = document.getElementById('btn-victory-next');

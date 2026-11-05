@@ -99,30 +99,7 @@ class SoundEngine {
     this._tone(990, 0.2, 'triangle', 0.15, 0, 0.1);
   }
 
-  playCoin() {
-    if (this.muted) return;
-    this.init();
-    if (!this.ctx) return;
-
-    const t = this.ctx.currentTime;
-    [987.77, 1318.51].forEach((freq, idx) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-      const startT = t + idx * 0.08;
-
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, startT);
-
-      gain.gain.setValueAtTime(this.volume * 0.3, startT);
-      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.25);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(startT);
-      osc.stop(startT + 0.25);
-    });
-  }
+  playCoin() {}
 
   // Level cleared: rising four-note arpeggio
   playVictory() {
