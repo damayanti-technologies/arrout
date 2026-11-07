@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FAF6F0">
+<meta name="description" content="Arrout: a calm arrow-escape puzzle game. Tap the arrows in the right order to clear the board.">
+<title>Arrout</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Righteous&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Cinzel:wght@600;800&family=Fredoka+One&family=Orbitron:wght@600;800&display=swap">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/extras-a.css">
+<link rel="stylesheet" href="css/extras-b.css">
+<link rel="stylesheet" href="css/extras-c.css">
+<!-- Level data: deferred so parsing the page is not blocked; everything reads it lazily at play time. -->
+<style>
+/* dolphin removed: speech bubble now sits centred above the PLAY card */
+.play-fixed .quote-bubble{left:50%!important;right:auto!important;transform:translateX(-50%);width:230px!important;top:auto!important;bottom:calc(100% + 14px)!important;text-align:center}
+.play-fixed .quote-bubble::after{left:50%!important;top:auto!important;bottom:-9px!important;margin:0 0 0 -9px!important;border-style:solid!important;border-width:9px 9px 0 9px!important;border-color:#fff transparent transparent transparent!important}
+.dol-group{pointer-events:none}
+/* ===== First-launch tutorial ===== */
+#arrout-tut{position:absolute;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:stretch;
+  background:linear-gradient(180deg,#F2F8FF 0%,#EEF4FF 55%,#EAFAF8 100%);color:#152642;
+  font-family:inherit;padding:calc(env(safe-area-inset-top,0px) + 14px) 18px calc(env(safe-area-inset-bottom,0px) + 16px);
+  opacity:0;transition:opacity .35s ease;--tut-arrow:#152642;--tut-dot:#C9D4E6;--tut-card:#FFFFFF;--tut-mut:#5B6B85}
+#arrout-tut.tut-in{opacity:1}
+html[data-dark="1"] #arrout-tut{background:linear-gradient(180deg,#0E1628,#17233D);color:#E8EEF8;--tut-arrow:#DCE6F5;--tut-dot:#3A4A6B;--tut-card:#1F2D4A;--tut-mut:#9FB0C8}
+#arrout-tut .tut-top{display:flex;align-items:center;justify-content:space-between;min-height:34px}
+#arrout-tut .tut-dots{display:flex;gap:7px}
+#arrout-tut .tut-dots i{width:8px;height:8px;border-radius:50%;background:var(--tut-dot);transition:all .25s}
+#arrout-tut .tut-dots i.on{width:22px;border-radius:6px;background:#6366F1}
+#arrout-tut .tut-skip{background:none;border:0;color:var(--tut-mut);font-weight:700;font-size:.9rem;padding:8px 4px;cursor:pointer}
+#arrout-tut .tut-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;min-height:0;overflow:auto}
+#arrout-tut h2{margin:0;font-size:1.55rem;font-weight:900;letter-spacing:.2px}
+#arrout-tut .tut-text{margin:0;max-width:330px;font-size:1rem;line-height:1.45;color:var(--tut-mut);font-weight:600}
+#arrout-tut .tut-text b{color:inherit;filter:brightness(.8)}
+#arrout-tut .tut-board{width:100%;max-width:330px;background:var(--tut-card);border-radius:20px;padding:10px;box-shadow:0 8px 26px rgba(40,60,110,.12);margin-top:4px}
+#arrout-tut .tut-svg{display:block;width:100%;height:auto;touch-action:manipulation}
+#arrout-tut .tut-arrow{cursor:pointer;transition:transform .6s cubic-bezier(.5,0,.9,.45),opacity .6s ease-in}
+#arrout-tut .tut-arrow line{stroke:var(--tut-arrow);stroke-width:8;stroke-linecap:round}
+#arrout-tut .tut-arrow polygon{fill:var(--tut-arrow)}
+#arrout-tut .tut-arrow.bad line{stroke:#EF4444}
+#arrout-tut .tut-arrow.bad polygon{fill:#EF4444}
+#arrout-tut .tut-arrow.bad{animation:tutShake .4s}
+#arrout-tut .tut-arrow.pulse line,#arrout-tut .tut-arrow.pulse polygon{animation:tutPulse 1s infinite}
+@keyframes tutShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes tutPulse{50%{opacity:.35}}
+#arrout-tut .tut-hand{font-size:30px;animation:tutHand 1s ease-in-out infinite;pointer-events:none}
+@keyframes tutHand{50%{transform:translateY(7px)}}
+#arrout-tut .tut-hearts{font-size:1.35rem;letter-spacing:4px;min-height:1.7rem}
+#arrout-tut .tut-msg{min-height:2.7em;max-width:320px;font-weight:800;font-size:.98rem;line-height:1.35;color:#4F46E5;transition:color .2s}
+html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
+#arrout-tut .tut-msg.err{color:#EF4444}
+#arrout-tut .tut-msg.ok{color:#16A34A}
+#arrout-tut .tut-tips{display:flex;flex-direction:column;gap:9px;width:100%;max-width:340px;text-align:left}
+#arrout-tut .tut-tip{display:flex;gap:12px;align-items:center;background:var(--tut-card);border-radius:16px;padding:11px 14px;box-shadow:0 4px 14px rgba(40,60,110,.08)}
+#arrout-tut .tut-tip span{font-size:1.6rem;width:34px;text-align:center}
+#arrout-tut .tut-tip div{font-size:.9rem;line-height:1.35;color:var(--tut-mut);font-weight:600}
+#arrout-tut .tut-tip b{display:block;color:inherit;filter:brightness(.8);font-size:.98rem;font-weight:900}
+#arrout-tut .tut-nav{display:flex;gap:10px;margin-top:8px}
+#arrout-tut .tut-btn{flex:1;border:0;border-radius:16px;padding:15px 10px;font-size:1.05rem;font-weight:900;cursor:pointer;
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;box-shadow:0 8px 20px rgba(99,102,241,.35);transition:transform .15s,opacity .2s}
+#arrout-tut .tut-btn:active{transform:scale(.97)}
+#arrout-tut .tut-btn.ghost{flex:0 0 28%;background:var(--tut-card);color:var(--tut-mut);box-shadow:0 4px 14px rgba(40,60,110,.1)}
+#arrout-tut .tut-btn[disabled]{opacity:.4;box-shadow:none;cursor:default}
+#arrout-tut .tut-btn.glow:not([disabled]){animation:tutGlow 1.2s infinite}
+@keyframes tutGlow{50%{box-shadow:0 8px 30px rgba(99,102,241,.7)}}
+</style>
+<script src="levels-1000.js" defer></script>
+<script src="levels-daily.js" defer></script>
+<script src="levels-room.js" defer></script>
+<script src="levels-battle.js" defer></script>
+</head>
+<body>
+<!-- Mobile App Frame -->
+  <div class="mobile-app-frame screen-home-active">
+
+    <!-- Cinematic Intro Screen (Exact Match to Arrout (5).html with Website Theme Colors) -->
+    <div id="intro">
+      <div id="gd"></div>
+      <div id="bd"></div>
+      <div id="itl"></div>
+      <div id="tag">Tap. Escape. Repeat.</div>
+    </div>
+
+    <!-- Decorative Flora in Top-Right Background -->
+    
+    
+    <!-- Top Header (Home View) -->
+    <header id="main-app-header" class="app-header">
+      <div class="brand-block">
+        <div class="brand-text-col">
+          <span class="brand-title">ARROUT</span>
+          <span class="brand-subtitle">THINK • AIM • CONNECT</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="coin-pill">
+          <div class="coin-icon-gold">★</div>
+          <span class="user-coin-count">2450</span>
+        </div>
+        <div class="avatar-thumbnail user-avatar-display" data-nav="profile">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="#334155">
+            <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" />
+          </svg>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Floating Toast Notification -->
+    <div id="global-toast" class="global-toast">Notification</div>
+
+    <!-- Screen Viewport -->
+    <main class="app-viewport">
+
+      <!-- ================= HOME SCREEN ================= -->
+      <section id="screen-home" class="app-screen active"><!-- 2-Column Mode Cards Grid -->
+        <div class="home-top-actions">
+          <button class="home-icon-btn" data-nav="profile" aria-label="Profile">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/></svg>
+          </button>
+          <button class="home-icon-btn" data-nav="settings" aria-label="Settings">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+        
+        <div class="home-bg">
+          <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
+          <b class="star" style="left:10%;top:8%;color:#7DB5FF;animation-delay:-0s">✦</b><b class="star" style="left:84%;top:6%;color:#B79CFF;animation-delay:-1.2s">✦</b><b class="star" style="left:92%;top:30%;color:#5EEAD4;animation-delay:-2.1s">✦</b><b class="star" style="left:6%;top:34%;color:#B79CFF;animation-delay:-0.7s">✦</b><b class="star" style="left:78%;top:48%;color:#7DB5FF;animation-delay:-1.8s">✦</b><b class="star" style="left:14%;top:52%;color:#5EEAD4;animation-delay:-2.6s">✦</b><i class="bub" style="left:8%;width:14px;height:14px;animation-duration:11s;animation-delay:-0s"></i><i class="bub" style="left:22%;width:9px;height:9px;animation-duration:9s;animation-delay:-3s"></i><i class="bub" style="left:38%;width:18px;height:18px;animation-duration:13s;animation-delay:-6s"></i><i class="bub" style="left:55%;width:10px;height:10px;animation-duration:10s;animation-delay:-2s"></i><i class="bub" style="left:70%;width:15px;height:15px;animation-duration:12s;animation-delay:-8s"></i><i class="bub" style="left:86%;width:11px;height:11px;animation-duration:9s;animation-delay:-5s"></i><i class="bub" style="left:48%;width:8px;height:8px;animation-duration:8s;animation-delay:-1s"></i><i class="bub" style="left:93%;width:16px;height:16px;animation-duration:14s;animation-delay:-9s"></i>
+        </div>
+        <div class="home-hero">
+          <h1 class="home-logo">ARROUT</h1>
+          
+        </div>
+<div class="play-fixed play-holder">
+<div class="mode-grid-card card-play" data-nav="puzzle">
+            <div class="card-top-content">
+              <div class="card-3d-icon">
+                <svg width="44" height="44" viewBox="0 0 54 54" fill="none"><circle cx="27" cy="27" r="22" fill="#6C8CFF"/><path d="M22 17 L38 27 L22 37 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="card-title-col">
+                <div class="card-heading">PLAY</div>
+                <div id="home-level-text" class="play-level-text">Level 1</div>
+              </div>
+            </div>
+</div>
+<div class="dol-group">
+<div class="quote-bubble" id="home-quote">Can you solve this puzzle?</div>
+</div>
+</div>
+<div class="carousel-wrap">
+<div class="modes-grid-container">
+          <!-- Card 1: Battle vs computer opponent -->
+          <div class="mode-grid-card card-pvp" data-nav="1v1">
+            <div class="card-top-content">
+              <div class="card-3d-icon">
+                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
+                  <g transform="rotate(-45 27 27)">
+                    <rect x="24" y="6" width="6" height="34" rx="3" fill="#818CF8" />
+                    <rect x="25" y="6" width="4" height="34" rx="2" fill="#C7D2FE" />
+                    <rect x="18" y="32" width="18" height="5" rx="2" fill="#1E293B" />
+                    <circle cx="27" cy="42" r="3.5" fill="#FBBF24" />
+                  </g>
+                  <g transform="rotate(45 27 27)">
+                    <rect x="24" y="6" width="6" height="34" rx="3" fill="#6366F1" />
+                    <rect x="25" y="6" width="4" height="34" rx="2" fill="#A5B4FC" />
+                    <rect x="18" y="32" width="18" height="5" rx="2" fill="#1E293B" />
+                    <circle cx="27" cy="42" r="3.5" fill="#FBBF24" />
+                  </g>
+                </svg>
+              </div>
+              <div class="card-title-col">
+                <div class="card-heading">Battle</div>
+              </div>
+            </div>
+            <div class="card-bottom-row">
+              <div class="card-desc-text">Race a computer rival</div>
+              <div class="card-arrow-circle">→</div>
+            </div>
+          </div>
+
+          <!-- Card: Play with friends in a room -->
+          <div class="mode-grid-card card-room" data-nav="room">
+            <div class="card-top-content">
+              <div class="card-3d-icon">
+                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
+                  <circle cx="19" cy="20" r="7" fill="#34B38A"/><path d="M6 42c0-7.5 5.8-12 13-12s13 4.5 13 12v2H6v-2z" fill="#34B38A"/>
+                  <circle cx="37" cy="19" r="6" fill="#7BD9B3"/><path d="M27 43c0-6.2 4.7-10 10-10s10 3.8 10 10v1H27v-1z" fill="#7BD9B3"/>
+                </svg>
+              </div>
+              <div class="card-title-col">
+                <div class="card-heading">Play with Friends</div>
+              </div>
+            </div>
+            <div class="card-bottom-row">
+              <div class="card-desc-text">Create or join a room</div>
+              <div class="card-arrow-circle">→</div>
+            </div>
+          </div>
+
+          <!-- Card 2: Daily Challenge -->
+          <div class="mode-grid-card card-daily" data-nav="daily">
+            <div class="card-top-content">
+              <div class="card-3d-icon">
+                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
+                  <rect x="9" y="12" width="36" height="34" rx="10" fill="#34D399" />
+                  <rect x="9" y="18" width="36" height="28" rx="8" fill="#FFFFFF" />
+                  <rect x="17" y="8" width="4" height="8" rx="2" fill="#059669" />
+                  <rect x="33" y="8" width="4" height="8" rx="2" fill="#059669" />
+                  <path d="M27 24L29 29.5H35L30.2 33L32 38.5L27 35L22 38.5L23.8 33L19 29.5H25L27 24Z" fill="#10B981" />
+                </svg>
+              </div>
+              <div class="card-title-col">
+                <div class="card-heading">Daily Challenge</div>
+              </div>
+            </div>
+            <div class="card-bottom-row">
+              <div class="card-desc-text">New puzzle every day</div>
+              <div class="card-arrow-circle">→</div>
+            </div>
+          </div>
+
+          <!-- Card 3: Weekly Tournament -->
+          <div class="mode-grid-card card-tournament" data-nav="tournament">
+            <div class="card-top-content">
+              <div class="card-3d-icon">
+                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
+                  <path d="M17 14H37V26C37 31.5 32.5 36 27 36C21.5 36 17 31.5 17 26V14Z" fill="#FBBF24" />
+                  <path d="M17 18H11C9 18 9 26 13 28L17 28" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+                  <path d="M37 18H43C45 18 45 26 41 28L37 28" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
+                  <rect x="24" y="36" width="6" height="6" fill="#D97706" />
+                  <rect x="18" y="42" width="18" height="4" rx="2" fill="#78350F" />
+                  <polygon points="27,20 28.5,23.5 32,23.5 29,25.5 30.5,29 27,27 23.5,29 25,25.5 22,23.5 25.5,23.5" fill="#FEF3C7"/>
+                </svg>
+              </div>
+              <div class="card-title-col">
+                <div class="card-heading">Weekly Tournament</div>
+              </div>
+            </div>
+            <div class="card-bottom-row">
+              <div class="card-desc-text">Compete & win</div>
+              <div class="card-arrow-circle">→</div>
+            </div>
+          </div>
+</div>
+</div>
+<div class="home-dots"><i class="on"></i><i></i><i></i><i></i></div></section>
+      <!-- ================= LEVEL GAMEPLAY SCREEN (EXACT MATCH TO SCREENSHOT 2) ================= -->
+      <section id="screen-puzzle" class="app-screen">
+        
+        <!-- Level Screen Header (<  ✦ Level 36 ✦  2450  ⚙) -->
+        <div class="level-top-header">
+          <button class="btn-circle-action btn-back" aria-label="Back">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+
+          <div class="level-title-banner">
+            <span class="sparkle-icon">✦</span>
+            <span id="puzzle-level-title" class="level-title-text">Level 36</span>
+            <span class="sparkle-icon">✦</span>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="coin-pill" style="padding: 4px 10px; font-size: 0.85rem;">
+              <div class="coin-icon-gold" style="width: 16px; height: 16px; font-size: 0.55rem;">★</div>
+              <span class="user-coin-count">2450</span>
+            </div>
+            <button class="btn-circle-action" aria-label="Settings" data-nav="settings" style="width: 36px; height: 36px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sub-header Bar (Remaining Pill | Hearts | Normal) -->
+        <div class="level-sub-bar">
+          <div class="remaining-pill">
+            <span style="transform: rotate(45deg); display: inline-block;">➔</span>
+            <span id="level-arrows-remaining">52</span>
+          </div>
+
+          <div id="level-hearts-row" class="hearts-container"></div>
+
+          <div id="level-diff-badge" class="diff-badge-pill">Normal</div>
+        </div>
+
+        <!-- Cheer popup: shows at 25% / 50% / 75% cleared -->
+        <div id="cheer-popup" class="cheer-popup">
+          <div class="cheer-card">
+            <div class="cheer-ring" id="cheer-ring"><b id="cheer-badge" class="cheer-badge"></b></div>
+            <div class="cheer-mid">
+              <span id="cheer-text" class="cheer-text"></span>
+              <div class="cheer-steps"><i></i><i></i><i></i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1v1 Opponent Live Progress (Only during 1v1 duels) -->
+        <div id="pvp-live-hud" style="display: none; background: #FFF; padding: 10px 14px; border-radius: 16px; box-shadow: var(--clay-shadow); margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 4px;">
+            <span>Opponent: <b id="pvp-opp-name">Player</b></span>
+            <span id="pvp-opp-count">16 Left</span>
+          </div>
+          <div style="width: 100%; height: 6px; background: #F1F5F9; border-radius: 4px; overflow: hidden;">
+            <div id="pvp-opp-progress-bar" style="width: 0%; height: 100%; background: #F43F5E; transition: width 0.3s;"></div>
+          </div>
+          <div id="pvp-pot-badge" style="display: none; margin-top: 6px;"></div>
+        </div>
+
+        <!-- Dotted Board Viewport with Bending Arrow Paths -->
+        <div class="puzzle-board-card">
+          <div id="game-bending-board" style="width: 100%; height: 100%; position: relative;"></div>
+        </div>
+
+        <!-- Bottom Powerups (Lightbulb & Ruler Tool) -->
+        <div class="puzzle-powerups-bottom">
+          <div class="tool-wrap">
+            <div id="btn-powerup-hint" class="powerup-circle-btn">
+              <span class="tool-emoji">💡</span>
+              <span id="count-powerup-hint" class="powerup-counter-badge">3</span>
+            </div>
+            <div class="tool-label">Hint</div>
+          </div>
+
+          <div class="tool-wrap">
+            <div id="btn-powerup-undo" class="powerup-circle-btn" title="Show guide lines">
+              <span class="tool-emoji">📏</span>
+            </div>
+            <div class="tool-label">Guide</div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= LEVEL SELECTION SCREEN ================= -->
+      <section id="screen-levels" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Level Selection</h2>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div class="diff-pill-bar">
+          <button class="diff-filter-pill active" data-diff="all">ALL</button>
+          <button class="diff-filter-pill" data-diff="easy">EASY</button>
+          <button class="diff-filter-pill" data-diff="medium">MEDIUM</button>
+          <button class="diff-filter-pill" data-diff="hard">HARD</button>
+          <button class="diff-filter-pill" data-diff="expert">EXPERT</button>
+        </div>
+
+        <div id="levels-grid-container" class="levels-clay-grid"></div>
+      </section>
+
+      <!-- ================= 1v1 PVP SCREEN ================= -->
+      <section id="screen-1v1" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Battle</h2>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div style="background: #FFF; border-radius: 28px; padding: 32px 24px; text-align: center; box-shadow: var(--clay-shadow); display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+          <div id="matchmaking-radar" class="radar-spinner-soft"></div>
+          <h3 id="matchmaking-status-text" style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--text-navy); margin-bottom: 8px;">Ready to Duel</h3>
+          <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;">
+            Race a computer-controlled rival on the same puzzle. Each side pays a 50-coin entry fee and the first to clear every arrow takes the pot. Up to 5 paid battles a day, then you can keep playing for fun.
+          </p>
+
+          <button id="btn-start-matchmaking" class="btn-primary-clay">FIND OPPONENT</button>
+          <div id="matchmaking-actions" style="margin-top: 14px; display: none;">
+            <button id="btn-cancel-matchmaking" class="btn-back-soft" style="width: auto; padding: 10px 24px; border-radius: 20px; font-size: 0.85rem;">Cancel Search</button>
+          </div>
+        </div>
+      </section>
+
+      
+      <!-- ================= PLAY WITH FRIENDS (ROOM) SCREEN ================= -->
+      <section id="screen-room" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft" id="room-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Play with Friends</h2>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div class="room-card">
+          <!-- 1. Choose -->
+          <div id="room-view-menu" class="room-view">
+            <h3 class="room-h">Play in a room</h3>
+            <p class="room-p">Everyone in the room plays the same puzzle. First one to clear every arrow wins.</p>
+            <button id="room-create" class="btn-primary-clay room-btn">CREATE ROOM</button>
+            <button id="room-join" class="room-btn room-btn-alt">JOIN ROOM</button>
+          </div>
+
+          <!-- 2. Join with a code -->
+          <div id="room-view-join" class="room-view" hidden>
+            <h3 class="room-h">Join a room</h3>
+            <p class="room-p">Type the 5 letter code your friend sent you.</p>
+            <input id="room-code-input" class="room-code-input" maxlength="5" placeholder="CODE" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <div id="room-join-error" class="room-error" hidden></div>
+            <button id="room-join-go" class="btn-primary-clay room-btn">JOIN</button>
+            <button id="room-join-back" class="room-btn room-btn-alt">BACK</button>
+          </div>
+
+          <!-- 3. Lobby (host and guests) -->
+          <div id="room-view-lobby" class="room-view" hidden>
+            <div class="room-label" id="room-role-label">Your room</div>
+            <div id="room-code" class="room-code">-----</div>
+            <div id="room-share-block">
+              <button id="room-share" class="btn-primary-clay room-btn">SHARE LINK</button>
+              <input id="room-link" class="room-link" readonly aria-label="Room link">
+              <button id="room-copy-code" class="room-btn room-btn-alt">COPY CODE</button>
+            </div>
+            <div class="room-players-head">Players in room: <b id="room-count">1</b></div>
+            <div id="room-players" class="room-players"></div>
+            <p id="room-wait" class="room-p"></p>
+            <p id="room-local-note" class="room-p" hidden style="font-size:.78rem;color:#B45309;">Offline mode: this build has no game server, so a friend can only join from another tab or window of this same browser.</p>
+            <button id="room-start" class="btn-primary-clay room-btn" hidden>START GAME</button>
+            <button id="room-leave" class="room-btn room-btn-danger">LEAVE ROOM</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= WEEKLY TOURNAMENT SCREEN ================= -->
+      <section id="screen-tournament" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Weekly Tournament</h2>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div style="background: #FFF; border-radius: 28px; padding: 22px; box-shadow: var(--clay-shadow); margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-navy);">Championship Cup</h3>
+            <span style="font-size: 0.82rem; color: var(--accent-gold); font-weight: 800;">Ends in: <span id="tournament-time-remaining">--</span></span>
+          </div>
+
+          <div style="background: #EEF6FF; border: 1px solid #CFE3FA; border-radius: 14px; padding: 10px 14px; font-size: 0.74rem; color: #2B5C94; line-height: 1.4; margin-bottom: 16px;">
+            🏆 <b>Weekly puzzle:</b> one hard puzzle for everyone each week. Clear it as fast as you can; your best time is saved on this device. Eligibility needs 10 different levels cleared this week.
+          </div>
+
+          <div style="margin-bottom: 14px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; color: var(--text-navy);">
+              <span>Weekly Eligibility (10 Distinct Levels)</span>
+              <span id="tournament-eligibility-count">0 / 10 Levels</span>
+            </div>
+            <div style="width: 100%; height: 10px; background: #EDF2F7; border-radius: 6px; overflow: hidden; margin: 10px 0 6px 0;">
+              <div id="tournament-eligibility-fill" style="height: 100%; background: linear-gradient(90deg, #38BDF8, #F59E0B); width: 0%; transition: width 0.4s;"></div>
+            </div>
+            <div id="tournament-locked-msg" style="font-size: 0.75rem; color: #E53E3E; margin-top: 4px;">
+              Complete 10 distinct campaign levels this week to unlock your entry!
+            </div>
+          </div>
+
+          <button id="btn-enter-tournament" class="btn-primary-clay" disabled>
+            ENTER TOURNAMENT PUZZLE
+          </button>
+        </div>
+
+        <h3 style="font-family: var(--font-serif); margin-bottom: 10px; font-size: 1.15rem; color: var(--text-navy);">Your week</h3>
+        <div id="tournament-leaderboard-rows" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </section>
+
+      <!-- ================= PLAYER PROFILE ================= -->
+      <section id="screen-profile" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Player Profile</h2>
+          <button id="btn-settings-open" class="btn-back-soft" data-nav="settings" aria-label="Settings">⚙️</button>
+        </div>
+
+        <div style="background: #FFF; border-radius: 28px; padding: 22px; text-align: center; box-shadow: var(--clay-shadow); margin-bottom: 16px;">
+          <div id="profile-avatar-large" style="width: 80px; height: 80px; border-radius: 50%; background: #E8EEF8; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 12px auto;">🎯</div>
+          <label for="profile-username-input" class="profile-name-label">Username</label>
+          <input id="profile-username-input" type="text" value="ArrowPilot" maxlength="16" autocomplete="off" spellcheck="false" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--text-navy); font-size: 1.15rem; font-weight: 800; text-align: center; padding: 6px 14px; border-radius: 12px; margin-bottom: 8px;">
+          <div><button id="profile-save-name" class="profile-save-btn" disabled>SAVE NAME</button></div>
+          <div id="profile-name-msg" class="profile-name-msg" aria-live="polite"></div>
+          <div id="profile-player-id" style="font-size: 0.75rem; color: var(--text-muted);">ID: AE-000000</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
+          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
+            <div id="profile-stat-clears" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">0</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">Cleared</div>
+          </div>
+          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
+            <div id="profile-stat-wins" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">0W-0L</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">1v1 Record</div>
+          </div>
+          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
+            <div id="profile-stat-winrate" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">0%</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">Win Rate</div>
+          </div>
+          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
+            <div id="profile-stat-rating" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">1200</div>
+            <div style="font-size: 0.65rem; color: var(--text-muted);">Rating</div>
+          </div>
+        </div>
+
+        <h3 style="font-family: var(--font-serif); margin-bottom: 10px; font-size: 1.15rem; color: var(--text-navy);">Achievements & Trophies</h3>
+        <div id="profile-achievements-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+      </section>
+
+      <!-- ================= DAILY CHALLENGE SCREEN ================= -->
+      <section id="screen-daily" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Daily Challenge</h2>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #EBF8F2 0%, #DCF3E8 100%); border-radius: 28px; padding: 26px 20px; text-align: center; box-shadow: var(--clay-shadow);">
+          <div style="font-size: 2.8rem; margin-bottom: 8px;">📅</div>
+          <h2 id="daily-challenge-date" style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-navy); margin-bottom: 8px;">2026-10-15</h2>
+          <div id="daily-info" class="daily-info"></div>
+          <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; margin-bottom: 16px;">
+            Every day brings a unique deterministic puzzle! Solve today's challenge to earn 50 bonus coins and build your streak.
+          </p>
+          <div style="margin-bottom: 20px; font-weight: 800; color: #059669;">
+            🔥 Current Streak: <span id="daily-streak-count">0</span> Days
+          </div>
+          <button id="btn-play-daily" class="btn-primary-clay" style="background: #059669;">
+            PLAY TODAY'S PUZZLE
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= SETTINGS SCREEN ================= -->
+      <section id="screen-settings" class="app-screen">
+        <div class="screen-header-bar">
+          <button class="btn-back-soft btn-back" aria-label="Back">←</button>
+          <h2 class="screen-main-title">Settings</h2>
+          <div style="width: 40px;"></div>
+        </div>
+
+        <div style="background: #FFF; border-radius: 28px; padding: 26px 22px; box-shadow: var(--clay-shadow);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <div>
+              <div style="font-weight: 800; color: var(--text-navy);">Sound Effects</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Web Audio procedural synthesizer</div>
+            </div>
+            <input id="setting-sound-toggle" type="checkbox" checked style="width: 22px; height: 22px; accent-color: #6366F1;">
+          </div>
+
+          <div style="margin-bottom: 20px;">
+            <div style="font-weight: 800; color: var(--text-navy); margin-bottom: 6px;">Audio Volume</div>
+            <input id="setting-volume-slider" type="range" min="0" max="100" value="70" style="width: 100%; accent-color: #6366F1;">
+          </div>
+
+          <div class="opt-title">Appearance</div>
+          <div class="opt-row"><div><div class="opt-name">Dark mode</div><div class="opt-sub">Dark colors for the whole game</div></div><input id="setting-dark" type="checkbox" class="opt-check"></div>
+          <div class="opt-row"><div><div class="opt-name">Eye comfort</div><div class="opt-sub">Warm, softer screen for night reading</div></div><input id="setting-comfort" type="checkbox" class="opt-check"></div>
+
+          <div class="opt-title">In-game options</div>
+          <div class="opt-row"><div><div class="opt-name">Vibration</div><div class="opt-sub">Buzz on taps, wrong taps and wins</div></div><input id="setting-vibration" type="checkbox" class="opt-check"></div>
+          <div class="opt-row"><div><div class="opt-name">Cheer messages</div><div class="opt-sub">Great start, Halfway there, Almost there</div></div><input id="setting-cheer" type="checkbox" class="opt-check"></div>
+          <div class="opt-row"><div><div class="opt-name">Win confetti</div><div class="opt-sub">Confetti when you clear a level</div></div><input id="setting-confetti" type="checkbox" class="opt-check"></div>
+          <div class="opt-row"><div><div class="opt-name">Guide lines at start</div><div class="opt-sub">Start each level with the ruler on</div></div><input id="setting-guide" type="checkbox" class="opt-check"></div>
+          <div class="opt-block">
+            <div class="opt-name">Arrow speed</div>
+            <div class="opt-seg" id="setting-speed" role="group" aria-label="Arrow speed">
+              <button type="button" data-speed="slow">Slow</button><button type="button" data-speed="normal">Normal</button><button type="button" data-speed="fast">Fast</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 24px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
+            <b>About ARROUT:</b><br>
+            Version 2.1.0<br>
+            Your progress, coins and best times are stored on this device only.
+          </div>
+
+          <button id="btn-reset-data" style="width: 100%; background: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer;">
+            Reset Local Progress
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Synchronized 3-2-1 Countdown Overlay -->
+    <div id="countdown-overlay" style="position: absolute; inset: 0; background: rgba(250, 246, 240, 0.92); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 60; backdrop-filter: blur(8px);">
+      <div id="countdown-text" style="font-family: var(--font-serif); font-size: 6rem; font-weight: 900; color: #152642;">3</div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div id="modal-victory" class="app-modal">
+      <div class="modal-clay-card">
+        <div id="victory-emoji" style="font-size: 2.8rem; margin-bottom: 6px;">🎉</div>
+        <h2 id="victory-title" class="modal-title-serif">Level Cleared!</h2>
+        <div class="modal-stats-soft">
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">TIME</div>
+            <div id="victory-stat-time" style="font-weight: 800; font-size: 1.1rem; color: var(--text-navy);">0s</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">MOVES</div>
+            <div id="victory-stat-moves" style="font-weight: 800; font-size: 1.1rem; color: var(--text-navy);">0</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">REWARD</div>
+            <div id="victory-stat-coins" style="font-weight: 800; font-size: 1.1rem; color: var(--accent-gold);">+10 Coins</div>
+          </div>
+        </div>
+        <button id="btn-victory-next" class="btn-primary-clay">CONTINUE</button>
+      </div>
+    </div>
+
+    <!-- 1v1 Result Modal -->
+    <div id="modal-1v1-result" class="app-modal">
+      <div class="modal-clay-card">
+        <h2 id="pvp-result-title" class="modal-title-serif">VICTORY!</h2>
+        <p id="pvp-result-subtitle" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px;"></p>
+        <div class="modal-stats-soft">
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">RATING</div>
+            <div id="pvp-rating-change" style="font-weight: 800; font-size: 1rem; color: #10B981;">+32 MMR</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">REWARD</div>
+            <div id="pvp-coins-earned" style="font-weight: 800; font-size: 1rem; color: var(--accent-gold);">+30 Coins</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-pvp-rematch" class="btn-primary-clay">PLAY AGAIN</button>
+          <button id="btn-pvp-home" class="btn-back-soft" style="width: auto; padding: 0 20px; border-radius: 18px;">HOME</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confetti Particle Container -->
+    <div id="confetti-canvas-wrapper" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 105;"></div>
+
+    
+
+  </div>
+
+<script src="js/audio.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/arrow-path-generator.js"></script>
+<script src="js/arrow-path-engine.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/tournament.js"></script>
+<script src="js/app.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/carousel.js"></script>
+<script src="js/quote.js"></script>
+<script src="js/carousel-fade.js"></script>
+<script src="js/rooms.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/coins.js"></script>
+<script src="js/themes.js"></script>
+<script>
+/* ===== ARROUT first-launch tutorial (shows once, replay from Settings > How to play) ===== */
+(function () {
+  var KEY = 'arrout_tutorial_v1', C = 44, NS = 'http://www.w3.org/2000/svg';
+  function seen() { try { return localStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+  function mark() { try { localStorage.setItem(KEY, '1'); } catch (e) {} }
+  function el(tag, attrs, parent) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function h(tag, cls, html) { var n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
+  function sound(name) { try { var s = window.soundEngine; if (s && s[name]) s[name](); } catch (e) {} }
+
+  /* ---------- tiny playable board ---------- */
+  function Board(host, spec) {
+    var cols = spec.cols, rows = spec.rows, self = this;
+    var svg = el('svg', { 'class': 'tut-svg', viewBox: '0 0 ' + cols * C + ' ' + rows * C });
+    for (var y = 0; y < rows; y++) for (var x = 0; x < cols; x++)
+      el('circle', { cx: x * C + C / 2, cy: y * C + C / 2, r: 2.2, fill: 'var(--tut-dot)' }, svg);
+    var gArr = el('g', {}, svg), gGuide = el('g', { 'pointer-events': 'none' }, svg), gTop = el('g', { 'pointer-events': 'none' }, svg);
+    host.appendChild(svg);
+    this.svg = svg; this.gTop = gTop; this.onTap = null; this.guides = false;
+
+    this.arrows = spec.arrows.map(function (a, i) {
+      var t = a.t, hd = a.h, dx = Math.sign(hd[0] - t[0]), dy = Math.sign(hd[1] - t[1]), cells = [], cx = t[0], cy = t[1];
+      for (;;) { cells.push(cx + ',' + cy); if (cx === hd[0] && cy === hd[1]) break; cx += dx; cy += dy; }
+      var g = el('g', { 'class': 'tut-arrow' }, gArr);
+      var x1 = t[0] * C + C / 2, y1 = t[1] * C + C / 2, x2 = hd[0] * C + C / 2, y2 = hd[1] * C + C / 2;
+      el('line', { x1: x1, y1: y1, x2: x2, y2: y2 }, g);
+      var px = -dy, py = dx, tip = [x2 + dx * 15, y2 + dy * 15], b = [x2 - dx * 3, y2 - dy * 3];
+      el('polygon', { points: tip.join(',') + ' ' + (b[0] + px * 12) + ',' + (b[1] + py * 12) + ' ' + (b[0] - px * 12) + ',' + (b[1] - py * 12) }, g);
+      var o = { id: i, t: t, h: hd, dx: dx, dy: dy, cells: cells, g: g, alive: true, len: cells.length };
+      g.addEventListener('click', function (e) { e.stopPropagation(); if (o.alive && self.onTap) self.onTap(o); });
+      return o;
+    });
+
+    this.occupied = function () { var m = {}; self.arrows.forEach(function (a) { if (a.alive) a.cells.forEach(function (c) { m[c] = a; }); }); return m; };
+    this.blocker = function (a) {
+      var m = self.occupied(), x = a.h[0] + a.dx, y = a.h[1] + a.dy;
+      while (x >= 0 && y >= 0 && x < cols && y < rows) { var o = m[x + ',' + y]; if (o && o !== a) return { arrow: o, x: x, y: y }; x += a.dx; y += a.dy; }
+      return null;
+    };
+    this.isFree = function (a) { return !self.blocker(a); };
+    this.alive = function () { return self.arrows.filter(function (a) { return a.alive; }); };
+    this.launch = function (a, cb) {
+      a.alive = false; a.g.classList.remove('pulse');
+      var dist = 0, x = a.h[0], y = a.h[1];
+      while (x >= -1 && y >= -1 && x <= cols && y <= rows) { x += a.dx; y += a.dy; dist++; }
+      dist += a.len;
+      a.g.style.pointerEvents = 'none';
+      a.g.style.transform = 'translate(' + a.dx * dist * C + 'px,' + a.dy * dist * C + 'px)';
+      a.g.style.opacity = '0.2';
+      sound('playEscape');
+      self.drawGuides();
+      setTimeout(function () { if (a.g.parentNode) a.g.parentNode.removeChild(a.g); if (cb) cb(); }, 650);
+    };
+    this.shake = function (a) {
+      a.g.classList.remove('bad'); void a.g.getBoundingClientRect(); a.g.classList.add('bad');
+      sound('playBlocked'); try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+      setTimeout(function () { a.g.classList.remove('bad'); }, 600);
+    };
+    this.setGuides = function (on) { self.guides = on; self.drawGuides(); };
+    this.drawGuides = function () {
+      while (gGuide.firstChild) gGuide.removeChild(gGuide.firstChild);
+      if (!self.guides) return;
+      self.alive().forEach(function (a) {
+        var bl = self.blocker(a), sx = a.h[0] * C + C / 2 + a.dx * 18, sy = a.h[1] * C + C / 2 + a.dy * 18, ex, ey;
+        if (bl) { ex = bl.x * C + C / 2 - a.dx * C / 2; ey = bl.y * C + C / 2 - a.dy * C / 2; }
+        else { ex = a.dx > 0 ? cols * C : a.dx < 0 ? 0 : sx; ey = a.dy > 0 ? rows * C : a.dy < 0 ? 0 : sy; }
+        el('line', { x1: sx, y1: sy, x2: ex, y2: ey, stroke: bl ? '#EF4444' : '#16A34A', 'stroke-width': 3, 'stroke-dasharray': '2 7', 'stroke-linecap': 'round' }, gGuide);
+        if (bl) {
+          var cx = bl.x * C + C / 2 - a.dx * (C / 2 - 1), cy = bl.y * C + C / 2 - a.dy * (C / 2 - 1);
+          el('circle', { cx: cx, cy: cy, r: 11, fill: '#EF4444' }, gGuide);
+          var tx = el('text', { x: cx, y: cy + 5, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 900, fill: '#fff' }, gGuide); tx.textContent = '\u2715';
+        } else {
+          var ck = el('text', { x: Math.max(12, Math.min(cols * C - 12, ex - a.dx * 12)), y: Math.max(14, Math.min(rows * C - 6, ey - a.dy * 12 + 5)), 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 900, fill: '#16A34A' }, gGuide); ck.textContent = '\u2713';
+        }
+      });
+    };
+    this.hand = function (a) {
+      var x = ((a.t[0] + a.h[0]) / 2) * C + C / 2, y = ((a.t[1] + a.h[1]) / 2) * C + C / 2 + 8;
+      var t = el('text', { x: x, y: y, 'class': 'tut-hand', 'text-anchor': 'middle' }, gTop); t.textContent = '\uD83D\uDC46';
+      return function () { if (t.parentNode) t.parentNode.removeChild(t); };
+    };
+  }
+
+  /* ---------- steps ---------- */
+  var STEPS = [
+    { title: 'Welcome to ARROUT', text: 'Every puzzle is a board full of arrows. Send <b>every arrow off the board</b> to win the level.',
+      build: function (c) {
+        var b = c.board({ cols: 5, rows: 4, arrows: [{ t: [0, 0], h: [2, 0] }, { t: [4, 1], h: [4, 3] }, { t: [0, 2], h: [3, 2] }] });
+        c.msg('Watch: arrows fly out one by one');
+        function tick() {
+          var al = b.alive();
+          if (!al.length) { c.timer(function () { c.rebuild(); }, 900); return; }
+          var f = al.filter(function (a) { return b.isFree(a); })[0];
+          if (f) b.launch(f, function () { c.timer(tick, 450); });
+        }
+        c.timer(tick, 1100);
+      } },
+    { title: 'Tap to launch', text: 'Each arrow flies in the direction it points. Tap an arrow whose path is <b>clear</b> and it escapes!', gate: true,
+      build: function (c) {
+        var b = c.board({ cols: 5, rows: 3, arrows: [{ t: [0, 1], h: [3, 1] }] });
+        var off = b.hand(b.arrows[0]); b.arrows[0].g.classList.add('pulse');
+        c.msg('Try it: tap the arrow');
+        b.onTap = function (a) { off(); b.launch(a, function () { c.msg('Great! It flew off the board \u2728', 'ok'); c.done(); }); };
+      } },
+    { title: 'Blocked arrows', text: 'If something is in the way, the arrow can\u2019t move \u2014 and a wrong tap costs a \u2764\uFE0F heart. Clear the blocker first!', gate: true, hearts: true,
+      build: function (c) {
+        var b = c.board({ cols: 5, rows: 4, arrows: [{ t: [0, 2], h: [2, 2] }, { t: [3, 3], h: [3, 0] }] });
+        var P = b.arrows[0], Q = b.arrows[1], off = b.hand(P), lost = false;
+        P.g.classList.add('pulse');
+        c.msg('Try tapping the arrow on the LEFT');
+        b.onTap = function (a) {
+          if (a === P && !b.isFree(P)) {
+            off(); P.g.classList.remove('pulse'); b.shake(P); if (!lost) { lost = true; c.loseHeart(); }
+            c.msg('Blocked! The other arrow is in the way. Tap it first.', 'err'); Q.g.classList.add('pulse');
+          } else if (a === Q) {
+            off(); Q.g.classList.remove('pulse');
+            b.launch(Q, function () { P.g.classList.add('pulse'); c.msg('Path cleared \u2014 now tap the left arrow!'); });
+          } else if (a === P) {
+            P.g.classList.remove('pulse');
+            b.launch(P, function () { c.msg('Perfect! Order matters \uD83E\uDDE0', 'ok'); c.done(); });
+          }
+        };
+      } },
+    { title: 'Plan ahead', text: 'Follow the line from each arrow\u2019s tip. <b style="color:#16A34A">Green</b> = free to go. <b style="color:#EF4444">Red \u2715</b> = blocked. Clear the whole board!', gate: true, hearts: true,
+      build: function (c) {
+        var b = c.board({ cols: 6, rows: 5, arrows: [{ t: [0, 0], h: [3, 0] }, { t: [4, 0], h: [4, 2] }, { t: [2, 3], h: [4, 3] }] });
+        b.setGuides(true);
+        c.msg('Only ONE arrow is free here. Find it!');
+        b.onTap = function (a) {
+          if (!b.isFree(a)) { b.shake(a); c.loseHeart(); c.msg('Blocked \u2014 check the red line!', 'err'); return; }
+          b.launch(a, function () {
+            if (b.alive().length) c.msg('Nice! Now look for the next free arrow.');
+            else { c.msg('Board cleared! You\u2019re a natural \uD83C\uDF89', 'ok'); c.done(); }
+          });
+        };
+      } },
+    { title: 'Tools & tips', text: '', last: true,
+      build: function (c) {
+        var t = h('div', 'tut-tips', '');
+        [['\uD83D\uDCA1', 'Hint', 'Shows an arrow you can safely tap. Hints are limited.'],
+         ['\uD83D\uDCCF', 'Guide', 'Draws the lines from every arrow\u2019s tip, just like you saw.'],
+         ['\u2764\uFE0F', 'Hearts', 'You get 3 per level. A blocked tap costs one \u2014 so think first!'],
+         ['\uD83D\uDD0D', 'Zoom & move', 'Pinch (or scroll) to zoom, drag to move around big boards.'],
+         ['\uD83C\uDFAF', 'Hard levels', 'Some boards start with just ONE free arrow. Take your time!']].forEach(function (r) {
+          t.appendChild(h('div', 'tut-tip', '<span>' + r[0] + '</span><div><b>' + r[1] + '</b>' + r[2] + '</div>'));
+        });
+        c.body.appendChild(t);
+      } }
+  ];
+
+  /* ---------- overlay ---------- */
+  var root = null, idx = 0, timers = [];
+  function close() {
+    mark(); clear();
+    if (!root) return;
+    var r = root; root = null; r.classList.remove('tut-in');
+    setTimeout(function () { if (r.parentNode) r.parentNode.removeChild(r); }, 380);
+  }
+  function clear() { timers.forEach(clearTimeout); timers = []; }
+
+  function render() {
+    clear();
+    var st = STEPS[idx], ok = !st.gate, hearts = 3;
+    root.innerHTML = '';
+    var top = h('div', 'tut-top'), dots = h('div', 'tut-dots');
+    STEPS.forEach(function (s, i) { dots.appendChild(h('i', i === idx ? 'on' : '')); });
+    var skip = h('button', 'tut-skip', st.last ? '' : 'Skip'); skip.onclick = close;
+    top.appendChild(dots); top.appendChild(skip); root.appendChild(top);
+
+    var body = h('div', 'tut-body'); root.appendChild(body);
+    body.appendChild(h('h2', '', st.title));
+    if (st.text) body.appendChild(h('p', 'tut-text', st.text));
+    var heartsEl = null;
+    if (st.hearts) { heartsEl = h('div', 'tut-hearts', '\u2764\uFE0F\u2764\uFE0F\u2764\uFE0F'); body.appendChild(heartsEl); }
+    var boardHost = null, msgEl = null;
+    var next, back;
+
+    var ctx = {
+      body: body,
+      board: function (spec) {
+        boardHost = h('div', 'tut-board'); body.appendChild(boardHost);
+        msgEl = h('div', 'tut-msg', ''); body.appendChild(msgEl);
+        var b = new Board(boardHost, spec); ctx._b = b; return b;
+      },
+      msg: function (t, kind) { if (msgEl) { msgEl.textContent = t; msgEl.className = 'tut-msg' + (kind ? ' ' + kind : ''); } },
+      timer: function (fn, ms) { timers.push(setTimeout(fn, ms)); },
+      rebuild: function () {
+        if (!root) return;
+        if (boardHost) boardHost.parentNode.removeChild(boardHost);
+        if (msgEl) msgEl.parentNode.removeChild(msgEl);
+        boardHost = msgEl = null; st.build(ctx);
+      },
+      loseHeart: function () {
+        if (!heartsEl) return; hearts = Math.max(0, hearts - 1);
+        heartsEl.textContent = new Array(hearts + 1).join('\u2764\uFE0F') + new Array(4 - hearts).join('\uD83E\uDD0D');
+        if (hearts === 0) timers.push(setTimeout(function () { hearts = 3; heartsEl.textContent = '\u2764\uFE0F\u2764\uFE0F\u2764\uFE0F'; }, 900));
+      },
+      done: function () { ok = true; next.disabled = false; next.classList.add('glow'); }
+    };
+    st.build(ctx);
+
+    var nav = h('div', 'tut-nav');
+    back = h('button', 'tut-btn ghost', 'Back'); back.onclick = function () { if (idx > 0) { idx--; render(); } };
+    if (idx === 0) back.style.visibility = 'hidden';
+    next = h('button', 'tut-btn', st.last ? 'Start playing! \uD83D\uDE80' : 'Next');
+    if (st.gate) next.disabled = true;
+    next.onclick = function () { if (st.last) close(); else { idx++; render(); } };
+    nav.appendChild(back); nav.appendChild(next); root.appendChild(nav);
+  }
+
+  function open() {
+    if (root) return;
+    var frame = document.querySelector('.mobile-app-frame') || document.body;
+    root = h('div'); root.id = 'arrout-tut'; idx = 0;
+    frame.appendChild(root); render();
+    requestAnimationFrame(function () { requestAnimationFrame(function () { if (root) root.classList.add('tut-in'); }); });
+  }
+  window.arroutShowTutorial = open;
+
+  /* ---------- when to show ---------- */
+  function afterIntro(fn) {
+    var tries = 0;
+    (function wait() {
+      var I = document.getElementById('intro');
+      if (!I || I.style.display === 'none' || tries > 40) return setTimeout(fn, 250);
+      tries++; setTimeout(wait, 250);
+    })();
+  }
+  function addSettingsRow() {
+    var t = document.querySelector('#screen-settings .opt-title');
+    if (!t || document.getElementById('tut-replay-row')) return;
+    var row = h('div', 'opt-row', '<div><div class="opt-name">How to play</div><div class="opt-sub">Replay the tutorial</div></div>');
+    row.id = 'tut-replay-row';
+    var b = h('button', '', 'Show'); b.style.cssText = 'border:0;border-radius:12px;padding:8px 16px;font-weight:800;color:#fff;background:linear-gradient(135deg,#6366F1,#8B5CF6);cursor:pointer';
+    b.onclick = open; row.appendChild(b);
+    var title = h('div', 'opt-title', 'Help'); t.parentNode.insertBefore(title, t); t.parentNode.insertBefore(row, t);
+  }
+  function init() {
+    addSettingsRow();
+    if (!seen()) afterIntro(open);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+</body>
+</html>
