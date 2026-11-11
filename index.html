@@ -780,6 +780,19 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
       </div>
     </div>
 
+    <!-- App Open Promotional Modal (Sannivesham App) -->
+    <div id="modal-app-promo" class="app-modal" role="dialog" aria-modal="true" aria-label="Special Announcement">
+      <div class="promo-modal-card">
+        <!-- Close button at top with X mark -->
+        <button type="button" class="promo-modal-close" id="btn-close-app-promo" aria-label="Close">✕</button>
+        
+        <!-- Clickable High Quality Promotional Image -->
+        <div class="promo-image-clickable" id="promo-image-container" role="button" tabindex="0" title="Click to view on Google Play Store">
+          <img src="assets/sannivesham-promo.jpg" alt="Sannivesham App on Google Play" class="promo-banner-img" loading="eager" />
+        </div>
+      </div>
+    </div>
+
     <!-- Confetti Particle Container -->
     <div id="confetti-canvas-wrapper" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 105;"></div>
 
@@ -808,6 +821,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 <script src="js/settings.js"></script>
 <script src="js/modes.js"></script>
 <script src="js/themes.js"></script>
+<script src="js/promo.js"></script>
 <script>
 /* ===== ARROUT first-launch tutorial (shows once, replay from Settings > How to play) ===== */
 (function () {
