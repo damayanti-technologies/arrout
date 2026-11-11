@@ -570,10 +570,28 @@
 
           // Write back merged document to Firestore to bring cloud fully up to date
           await this.saveToCloudNow();
+
+          // Sync weekly tournament score to Firebase Leaderboard
+          if (window.tournamentManager && typeof window.tournamentManager.submitScoreToFirebase === 'function') {
+            const pts = (local && local.tournamentPoints) || 0;
+            if (pts > 0) {
+              window.tournamentManager.submitScoreToFirebase(pts);
+            }
+          }
+
           if (window.showToast) window.showToast('Google Cloud progress synced successfully!');
         } else {
           console.log('[FirebaseSync] No cloud document yet. Uploading local data to Google Cloud...');
           await this.saveToCloudNow();
+
+          // Sync weekly tournament score to Firebase Leaderboard
+          if (window.tournamentManager && typeof window.tournamentManager.submitScoreToFirebase === 'function') {
+            const pts = (window.storageManager && window.storageManager.data && window.storageManager.data.tournamentPoints) || 0;
+            if (pts > 0) {
+              window.tournamentManager.submitScoreToFirebase(pts);
+            }
+          }
+
           if (window.showToast) window.showToast('Progress backed up to Google Cloud!');
         }
       } catch (err) {

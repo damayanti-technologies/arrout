@@ -2105,4 +2105,36 @@ html[data-dark="1"] #tourney-auth-status-bar div {
   color: #E8EEF8 !important;
 }
 
+html[data-dark="1"] #victory-tourney-pill {
+  background: #451A03 !important;
+  border-color: #B45309 !important;
+  color: #FDE68A !important;
+}
+
+html[data-dark="1"] .clay-card-static,
+html[data-dark="1"] .tourney-score-card,
+html[data-dark="1"] .tourney-empty-card {
+  background: #1E293B !important;
+  color: #E8EEF8 !important;
+}
+html[data-dark="1"] .tourney-player-row:not(.tourney-player-row-me) {
+  background: #1E293B !important;
+  color: #E8EEF8 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+html[data-dark="1"] .tourney-player-row-me {
+  background: #451A03 !important;
+  border-color: #D97706 !important;
+}
+html[data-dark="1"] .tourney-card-title,
+html[data-dark="1"] .tourney-section-title,
+html[data-dark="1"] .tourney-player-name {
+  color: #E8EEF8 !important;
+}
+html[data-dark="1"] .tourney-info-box {
+  background: #172554 !important;
+  border-color: #1E3A8A !important;
+  color: #BFDBFE !important;
+}
+
 

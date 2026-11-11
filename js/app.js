@@ -15,7 +15,6 @@ class ArroutApp {
     this.bendingEngine = null;
     this.activeDifficulty = 'all';   // difficulty filter on the Levels screen
     this._forceHash = null;          // hash set by our own navigate() calls (allowed to open any mode/level)
-    this._tourney = null;            // set while a weekly-tournament run is in progress
 
     this.init();
   }
@@ -331,7 +330,6 @@ class ArroutApp {
   // --- Bending Arrow Level Launcher (Matches Screenshot 2) ---
   launchBendingLevel(levelNum, difficulty = 'normal') {
     this.currentLevelNum = Number(levelNum) || 1;
-    if (this._tourney && this._tourney.level !== this.currentLevelNum) this._tourney = null;
 
     // Header text
     const titleEl = document.getElementById('puzzle-level-title');
@@ -382,23 +380,12 @@ class ArroutApp {
         });
       },
       onComplete: (stats) => {
-        // Weekly tournament run: keep best time, no campaign rewards
-        if (this._tourney && this._tourney.level === this.currentLevelNum) {
-          const rec = window.tournamentManager.recordTournamentResult(stats.totalTime);
-          this._tourney = null;
-          this.showVictoryModal({
-            title: 'Tournament run done!',
-            time: `${stats.totalTime}s`,
-            moves: stats.moves,
-            nextAction: () => this.navigate('tournament', null, { replace: true })
-          });
-          return;
-        }
         const res = window.storageManager.recordLevelCompletion(`LVL-${this.currentLevelNum}`, difficulty, stats.totalTime);
         this.showVictoryModal({
           title: `Level ${this.currentLevelNum} Cleared!`,
           time: `${stats.totalTime}s`,
           moves: stats.moves,
+          tourneyPoints: res.tournamentPoints,
           nextAction: () => {
             const nextLvl = Number(this.currentLevelNum) + 1;
             if (nextLvl <= 1000) {
@@ -447,10 +434,12 @@ class ArroutApp {
     if (!modal) return;
     const emojiEl = document.getElementById('victory-emoji');
     const stats = modal.querySelector('.modal-stats-soft');
+    const tourneyPill = document.getElementById('victory-tourney-pill');
     const nextBtn = document.getElementById('btn-victory-next');
     if (emojiEl) { emojiEl.textContent = emoji; emojiEl.style.display = emoji ? '' : 'none'; }
     document.getElementById('victory-title').textContent = title;
     if (stats) stats.style.display = 'none';
+    if (tourneyPill) tourneyPill.style.display = 'none';
     if (nextBtn) {
       nextBtn.textContent = button;
       nextBtn.onclick = () => {
@@ -461,7 +450,7 @@ class ArroutApp {
     modal.classList.add('open');
   }
 
-  showVictoryModal({ title, time, moves, nextAction }) {
+  showVictoryModal({ title, time, moves, tourneyPoints, nextAction }) {
     const modal = document.getElementById('modal-victory');
     if (!modal) return;
 
@@ -475,6 +464,17 @@ class ArroutApp {
     document.getElementById('victory-title').textContent = title;
     document.getElementById('victory-stat-time').textContent = time;
     document.getElementById('victory-stat-moves').textContent = moves;
+
+    // Show tournament points reward pill
+    const tourneyPill = document.getElementById('victory-tourney-pill');
+    if (tourneyPill) {
+      tourneyPill.style.display = 'flex';
+      const ptsSpan = document.getElementById('victory-tourney-pts');
+      if (ptsSpan) {
+        const total = (tourneyPoints !== undefined) ? tourneyPoints : (window.storageManager ? window.storageManager.data.tournamentPoints : 1);
+        ptsSpan.textContent = total;
+      }
+    }
 
     modal.classList.add('open');
     const nextBtn = document.getElementById('btn-victory-next');
@@ -539,14 +539,20 @@ class ArroutApp {
     }
   }
 
-  // --- Weekly Tournament (offline: one hard puzzle per week, best time kept on this device) ---
+  // --- Weekly Tournament (points-based: 1 point per level cleared in normal mode) ---
   renderWeeklyTournament() {
     const tm = window.tournamentManager;
     if (!tm) return;
     const info = tm.getWeeklyInfo();
 
     const timeEl = document.getElementById('tournament-time-remaining');
-    if (timeEl) timeEl.textContent = info.timeRemaining;
+    if (timeEl) {
+      if (info.isSunday) {
+        timeEl.innerHTML = `<span style="color:#D97706;font-weight:800;">Results Day</span> • Next in ${info.timeRemaining}`;
+      } else {
+        timeEl.textContent = info.timeRemaining;
+      }
+    }
 
     const countEl = document.getElementById('tournament-eligibility-count');
     if (countEl) countEl.style.display = 'none';
@@ -559,71 +565,70 @@ class ArroutApp {
       window.FirebaseSync.updateAuthUI(window.FirebaseSync.user);
     }
 
+    const targetLevel = this.unlockedLevel();
     const btn = document.getElementById('btn-enter-tournament');
     if (btn) {
       btn.disabled = false;
+      btn.textContent = info.isSunday ? `PLAY CAMPAIGN (LEVEL ${targetLevel})` : `PLAY NORMAL LEVELS (LEVEL ${targetLevel})`;
       btn.onclick = () => {
-        const sync = window.FirebaseSync;
-        const currentGoogleUser = (sync && sync.user) || (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser);
-        if (!currentGoogleUser) {
-          if (sync && typeof sync.openGoogleSignInModal === 'function') {
-            sync.openGoogleSignInModal(() => {
-              this.renderWeeklyTournament();
-              this._tourney = { level: info.level };
-              this.navigate('puzzle', info.level);
-            });
-            return;
-          }
-        }
-        this._tourney = { level: info.level };
-        this.navigate('puzzle', info.level);
+        this.navigate('puzzle', targetLevel);
       };
     }
 
     const rows = document.getElementById('tournament-leaderboard-rows');
     if (rows) {
-      const sc = info.score;
+      const myPts = info.points;
       const myUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid) ||
                     (window.storageManager && window.storageManager.data && window.storageManager.data.playerId);
 
       const renderBoard = (globalScores = []) => {
+        let myRankStr = '—';
+        const myIndex = globalScores.findIndex(p => p.uid === myUid);
+        if (myIndex !== -1) {
+          myRankStr = `#${myIndex + 1}`;
+        }
+
         let html = `
-          <div style="background:#FFF;border-radius:16px;padding:12px 16px;box-shadow:var(--clay-shadow);display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div class="tourney-score-card" style="background:#FFF;border-radius:18px;padding:14px 18px;box-shadow:var(--clay-shadow);display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <div>
-              <div style="font-weight:800;font-size:0.9rem;color:var(--text-navy);">Your best time</div>
-              <div style="font-size:0.72rem;color:var(--text-muted);">${sc ? sc.runs + ' run' + (sc.runs === 1 ? '' : 's') + ' this week' : 'No run yet this week'}</div>
+              <div class="tourney-card-title" style="font-weight:800;font-size:0.92rem;color:var(--text-navy);">Your Tournament Score</div>
+              <div style="font-size:0.74rem;color:var(--text-muted);margin-top:2px;">1 Level Cleared = 1 Point • Global Rank: <b>${myRankStr}</b></div>
             </div>
-            <div style="font-weight:800;font-size:1.05rem;color:var(--accent-gold);">${sc ? sc.timeSec + 's' : '—'}</div>
+            <div style="font-weight:900;font-size:1.4rem;color:var(--accent-gold);">${myPts} <span style="font-size:0.8rem;font-weight:700;">pts</span></div>
           </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 4px 6px;">
-            <span style="font-size:0.76rem;font-weight:800;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;">Global Leaderboard</span>
-            <span style="font-size:0.68rem;background:#ECFDF5;color:#059669;padding:2px 8px;border-radius:10px;font-weight:700;">LIVE</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 4px 8px;">
+            <span style="font-size:0.78rem;font-weight:800;letter-spacing:0.8px;color:var(--text-muted);text-transform:uppercase;">${info.isSunday ? 'Final Standings' : 'Global Leaderboard'}</span>
+            <span style="font-size:0.7rem;background:${info.isSunday ? '#FEF3C7' : '#ECFDF5'};color:${info.isSunday ? '#B45309' : '#059669'};padding:3px 10px;border-radius:12px;font-weight:800;">${info.isSunday ? '🏆 RESULTS DAY' : '● LIVE'}</span>
           </div>`;
 
         if (!globalScores.length) {
           html += `
-            <div style="background:#FFF;border-radius:14px;padding:16px;text-align:center;box-shadow:var(--clay-shadow);color:var(--text-muted);font-size:0.8rem;">
-              ${sc ? 'Syncing your score with global players...' : 'Be the first player worldwide to set a tournament record this week!'}
+            <div class="tourney-empty-card" style="background:#FFF;border-radius:14px;padding:20px;text-align:center;box-shadow:var(--clay-shadow);color:var(--text-muted);font-size:0.82rem;line-height:1.5;">
+              ${myPts > 0 ? 'Syncing your score with global players...' : 'Play Level ' + targetLevel + ' in normal mode to earn points and take 1st place!'}
             </div>`;
         } else {
-          html += `<div style="display:flex;flex-direction:column;gap:6px;">`;
+          html += `<div style="display:flex;flex-direction:column;gap:8px;">`;
           globalScores.forEach((p, idx) => {
             const isMe = p.uid === myUid;
             const rankEmoji = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+            const isChampion = (idx === 0 && info.isSunday);
             const avatar = p.photoURL
-              ? `<img src="${p.photoURL}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">`
-              : `<span style="width:24px;height:24px;border-radius:50%;background:#E2E8F0;display:inline-flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;color:var(--text-navy);">${(p.username || 'P').charAt(0).toUpperCase()}</span>`;
+              ? `<img src="${p.photoURL}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;">`
+              : `<span style="width:28px;height:28px;border-radius:50%;background:#E2E8F0;display:inline-flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:var(--text-navy);">${(p.username || 'P').charAt(0).toUpperCase()}</span>`;
 
             html += `
-              <div style="background:${isMe ? '#FEF9C3' : '#FFF'};border:${isMe ? '1.5px solid #FACC15' : '1px solid rgba(0,0,0,0.04)'};border-radius:12px;padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:var(--clay-shadow);">
-                <span style="font-weight:800;font-size:0.88rem;width:24px;text-align:center;">${rankEmoji}</span>
+              <div class="tourney-player-row ${isMe ? 'tourney-player-row-me' : ''}" style="background:${isMe ? '#FEF9C3' : '#FFF'};border:${isMe ? '1.5px solid #FACC15' : '1px solid rgba(0,0,0,0.04)'};border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--clay-shadow);">
+                <span style="font-weight:900;font-size:0.95rem;width:26px;text-align:center;">${rankEmoji}</span>
                 ${avatar}
-                <span style="flex:1;font-weight:${isMe ? '800' : '700'};font-size:0.82rem;color:var(--text-navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  ${p.username || 'ArrowPilot'} ${isMe ? '<span style="font-size:0.7rem;color:#B45309;">(You)</span>' : ''}
-                </span>
-                <span style="font-weight:800;font-size:0.85rem;color:var(--text-navy);font-variant-numeric:tabular-nums;">
-                  ${p.timeSec}s
-                </span>
+                <div style="flex:1;overflow:hidden;">
+                  <div class="tourney-player-name" style="font-weight:${isMe ? '800' : '700'};font-size:0.84rem;color:var(--text-navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    ${p.username || 'ArrowPilot'} ${isMe ? '<span style="font-size:0.72rem;color:#B45309;font-weight:800;">(You)</span>' : ''}
+                  </div>
+                  ${isChampion ? '<div style="font-size:0.68rem;color:#D97706;font-weight:800;">🏆 Weekly Champion</div>' : ''}
+                </div>
+                <div style="font-weight:900;font-size:0.95rem;color:var(--text-navy);font-variant-numeric:tabular-nums;text-align:right;">
+                  ${Number(p.points !== undefined ? p.points : (p.levelsCompleted || 0))} <span style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">pts</span>
+                </div>
               </div>`;
           });
           html += `</div>`;

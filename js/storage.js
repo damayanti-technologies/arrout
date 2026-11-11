@@ -52,8 +52,10 @@ class StorageManager {
       },
       // levelId ("LVL-12") -> { clearedAt, difficulty, bestTime }
       completedLevels: {},
-      // Weekly tournament: distinct level ids cleared this ISO week, and the best run
+      // Weekly tournament: distinct level ids cleared this ISO week, points earned (1 per level)
       tournamentWeekId: this.getCurrentWeekId(),
+      tournamentPoints: 0,
+      tournamentWeeklyLevels: [],
       tournamentQualifyingLevels: [],
       tournamentScore: null,
       achievements: DEFAULT_ACHIEVEMENTS.map(a => ({ ...a })),
@@ -67,6 +69,8 @@ class StorageManager {
     merged.stats = { ...defaults.stats, ...(saved.stats || {}) };
     merged.settings = { ...defaults.settings, ...(saved.settings || {}) };
     delete merged.coins;
+    if (typeof merged.tournamentPoints !== 'number') merged.tournamentPoints = 0;
+    if (!Array.isArray(merged.tournamentWeeklyLevels)) merged.tournamentWeeklyLevels = [];
     if (!merged.completedLevels || typeof merged.completedLevels !== 'object') merged.completedLevels = {};
     if (!Array.isArray(merged.tournamentQualifyingLevels)) merged.tournamentQualifyingLevels = [];
     // keep every default achievement; carry over the saved unlocked flag
@@ -101,6 +105,8 @@ class StorageManager {
     const cur = this.getCurrentWeekId();
     if (this.data.tournamentWeekId !== cur) {
       this.data.tournamentWeekId = cur;
+      this.data.tournamentPoints = 0;
+      this.data.tournamentWeeklyLevels = [];
       this.data.tournamentQualifyingLevels = [];
       this.data.tournamentScore = null;
       this.save();
@@ -124,11 +130,18 @@ class StorageManager {
       this.data.stats.fastestTime = completionTimeSec;
     }
 
-    // Weekly tournament qualification: distinct levels cleared this week
+    // Weekly tournament: 1 point earned for every level played/cleared in the campaign
+    this.data.tournamentPoints = (this.data.tournamentPoints || 0) + 1;
+    if (!this.data.tournamentWeeklyLevels) this.data.tournamentWeeklyLevels = [];
+    if (!this.data.tournamentWeeklyLevels.includes(levelId)) {
+      this.data.tournamentWeeklyLevels.push(levelId);
+    }
+
+    // Distinct levels tracking for achievement
     if (!this.data.tournamentQualifyingLevels.includes(levelId)) {
       this.data.tournamentQualifyingLevels.push(levelId);
-      if (this.data.tournamentQualifyingLevels.length >= 10) this.unlockAchievement('tournament_qualifier');
     }
+    this.unlockAchievement('tournament_qualifier');
 
     this.unlockAchievement('first_escape');
     if (this.data.stats.levelsCompleted >= 5) this.unlockAchievement('novice_solver');
@@ -136,7 +149,13 @@ class StorageManager {
     if (completionTimeSec > 0 && completionTimeSec <= 15) this.unlockAchievement('speed_demon');
 
     this.save();
-    return { isFirstTime };
+
+    // Auto-sync tournament score to Firebase live leaderboard
+    if (window.tournamentManager && typeof window.tournamentManager.onLevelCompleted === 'function') {
+      window.tournamentManager.onLevelCompleted(this.data.tournamentPoints);
+    }
+
+    return { isFirstTime, tournamentPoints: this.data.tournamentPoints };
   }
 
   // Battle result

@@ -270,7 +270,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
               </div>
               <div class="mode-meta">
                 <div class="mode-title">Weekly Tournament</div>
-                <div class="mode-sub">Championship Cup • Compete & Win</div>
+                <div class="mode-sub">Play Normal Levels • 1 Level = 1 Pt</div>
               </div>
             </div>
             <div class="mode-badge badge-amber">Cup 🏆</div>
@@ -536,25 +536,26 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <div style="width: 40px;"></div>
         </div>
 
-        <div style="background: #FFF; border-radius: 28px; padding: 22px; box-shadow: var(--clay-shadow); margin-bottom: 16px;">
+        <div class="clay-card-static" style="background: #FFF; border-radius: 28px; padding: 22px; box-shadow: var(--clay-shadow); margin-bottom: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h3 style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-navy);">Championship Cup</h3>
+            <h3 class="tourney-card-title" style="font-family: var(--font-serif); font-size: 1.3rem; color: var(--text-navy);">Championship Cup</h3>
             <span style="font-size: 0.82rem; color: var(--accent-gold); font-weight: 800;">Ends in: <span id="tournament-time-remaining">--</span></span>
           </div>
 
           <!-- Tournament Google User / Auth Status Bar -->
           <div id="tourney-auth-status-bar" style="margin-bottom: 12px;"></div>
 
-          <div style="background: #EEF6FF; border: 1px solid #CFE3FA; border-radius: 14px; padding: 12px 14px; font-size: 0.78rem; color: #2B5C94; line-height: 1.4; margin-bottom: 16px;">
-            🏆 <b>Weekly Championship:</b> Free entry for everyone! Clear this week's puzzle as fast as you can to set your best time on the global leaderboard.
+          <div class="tourney-info-box" style="background: #EEF6FF; border: 1px solid #CFE3FA; border-radius: 14px; padding: 12px 14px; font-size: 0.78rem; color: #2B5C94; line-height: 1.45; margin-bottom: 16px;">
+            🏆 <b>Weekly Championship (Mon – Sat):</b> Play normal campaign levels to compete! Each level cleared awards <b>+1 Tournament Point</b>.<br>
+            📅 <b>Sunday is Results Day:</b> Standings are locked, the weekly champion is crowned, and rewards are finalized!
           </div>
 
           <button id="btn-enter-tournament" class="btn-primary-clay">
-            ENTER TOURNAMENT PUZZLE
+            PLAY NORMAL LEVELS
           </button>
         </div>
 
-        <h3 style="font-family: var(--font-serif); margin-bottom: 10px; font-size: 1.15rem; color: var(--text-navy);">Your week</h3>
+        <h3 class="tourney-section-title" style="font-family: var(--font-serif); margin-bottom: 10px; font-size: 1.15rem; color: var(--text-navy);">Weekly Standings</h3>
         <div id="tournament-leaderboard-rows" style="display: flex; flex-direction: column; gap: 8px;"></div>
       </section>
 
@@ -694,7 +695,10 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
             <div id="victory-stat-moves" style="font-weight: 800; font-size: 1.1rem; color: var(--text-navy);">0</div>
           </div>
         </div>
-        <button id="btn-victory-next" class="btn-primary-clay">CONTINUE</button>
+        <div id="victory-tourney-pill" style="margin-top: 10px; background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 12px; padding: 6px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.78rem; color: #92400E; font-weight: 800;">
+          🏆 +1 Weekly Tournament Point! (<span id="victory-tourney-pts">0</span> pts)
+        </div>
+        <button id="btn-victory-next" class="btn-primary-clay" style="margin-top: 14px;">CONTINUE</button>
       </div>
     </div>
 
