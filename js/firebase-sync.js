@@ -735,20 +735,13 @@
       if (tourneyBar) {
         if (user) {
           tourneyBar.innerHTML = `
-            <div style="background: #EEF2FF; border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 1.1rem;">👤</span>
-                <div style="font-size: 0.8rem; color: #3730A3;">
-                  Connected: <b>${user.displayName || 'Google Pilot'}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
-                </div>
+            <div style="background: #EEF2FF; border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 1.1rem;">👤</span>
+              <div style="font-size: 0.8rem; color: #3730A3;">
+                Connected: <b>${user.displayName || 'Google Pilot'}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
               </div>
-              <button id="btn-tourney-switch-acc" style="background: none; border: 1px solid #C7D2FE; padding: 4px 10px; border-radius: 8px; color: #4F46E5; font-weight: 700; font-size: 0.75rem; cursor: pointer;">
-                Switch
-              </button>
             </div>
           `;
-          const switchBtn = document.getElementById('btn-tourney-switch-acc');
-          if (switchBtn) switchBtn.onclick = () => this.openGoogleSignInModal();
         } else {
           tourneyBar.innerHTML = `
             <div style="background: #FFFBEB; border: 1.5px solid #FDE68A; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">

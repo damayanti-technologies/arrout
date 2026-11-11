@@ -2097,3 +2097,12 @@ html:not([data-dark="1"]) .google-disclaimer-text {
   color: #5F6368;
 }
 
+html[data-dark="1"] #tourney-auth-status-bar > div {
+  background: #1E293B !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+html[data-dark="1"] #tourney-auth-status-bar div {
+  color: #E8EEF8 !important;
+}
+
+
