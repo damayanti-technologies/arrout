@@ -542,6 +542,9 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
             <span style="font-size: 0.82rem; color: var(--accent-gold); font-weight: 800;">Ends in: <span id="tournament-time-remaining">--</span></span>
           </div>
 
+          <!-- Tournament Google User / Auth Status Bar -->
+          <div id="tourney-auth-status-bar" style="margin-bottom: 12px;"></div>
+
           <div style="background: #EEF6FF; border: 1px solid #CFE3FA; border-radius: 14px; padding: 12px 14px; font-size: 0.78rem; color: #2B5C94; line-height: 1.4; margin-bottom: 16px;">
             🏆 <b>Weekly Championship:</b> Free entry for everyone! Clear this week's puzzle as fast as you can to set your best time on the global leaderboard.
           </div>
@@ -710,6 +713,62 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <button id="btn-pvp-rematch" class="btn-primary-clay">PLAY AGAIN</button>
           <button id="btn-pvp-home" class="btn-back-soft" style="width: auto; padding: 0 20px; border-radius: 18px;">HOME</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Google Sign-In In-App Account Chooser Modal -->
+    <div id="modal-google-auth" class="app-modal" role="dialog" aria-modal="true" aria-labelledby="google-modal-title">
+      <div class="modal-clay-card modal-google-card">
+        <button type="button" class="google-modal-close" id="btn-close-google-modal" aria-label="Close">✕</button>
+        
+        <div class="google-header-center">
+          <div class="google-logo-svg">
+            <svg viewBox="0 0 24 24" width="34" height="34">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+          </div>
+          <h2 id="google-modal-title" class="google-modal-title">Sign in with Google</h2>
+          <p class="google-modal-subtitle">Choose an account to continue to <span class="brand-text">ARROUT</span></p>
+        </div>
+
+        <!-- Dynamic Accounts List showing Emails -->
+        <div id="google-accounts-list" class="google-accounts-list"></div>
+
+        <!-- Use another account option -->
+        <div id="google-use-another-btn" class="google-account-row google-add-account-row" role="button" tabindex="0">
+          <div class="google-account-avatar add-avatar">+</div>
+          <div class="google-account-info">
+            <div class="google-account-name">Use another account</div>
+            <div class="google-account-email">Sign in with a different Google email</div>
+          </div>
+        </div>
+
+        <!-- Inline manual input form -->
+        <div id="google-manual-input-box" class="google-manual-input-box" style="display: none;">
+          <input type="email" id="google-custom-email" class="google-input-field" placeholder="Enter Google email (e.g. name@gmail.com)" autocomplete="email">
+          <div class="google-input-btn-row">
+            <button type="button" id="google-cancel-input-btn" class="google-btn-secondary">Cancel</button>
+            <button type="button" id="google-confirm-input-btn" class="google-btn-primary">Sign In</button>
+          </div>
+        </div>
+
+        <!-- Browser OAuth Fallback Button -->
+        <button type="button" id="btn-trigger-oauth-popup" class="google-oauth-btn">
+          <svg viewBox="0 0 24 24" width="16" height="16">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Open Google Web OAuth</span>
+        </button>
+
+        <p class="google-disclaimer-text">
+          To continue, Google will share your name, email address, and profile picture with ARROUT.
+        </p>
       </div>
     </div>
 

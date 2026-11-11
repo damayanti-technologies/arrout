@@ -24,17 +24,37 @@
     isConfigured: false,
 
     init() {
+      // Restore persisted active Google user if present
+      try {
+        const saved = localStorage.getItem('arrout_active_google_user');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && (parsed.email || parsed.uid)) {
+            this.user = parsed;
+            authUser = parsed;
+            this.updateAuthUI(this.user);
+          }
+        }
+      } catch (e) {}
+
+      // Ensure modal events are hooked as soon as DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => this.setupModalEventListeners());
+      } else {
+        this.setupModalEventListeners();
+      }
+
       const cfg = window.FIREBASE_CONFIG;
       if (!cfg || !cfg.apiKey || cfg.apiKey.includes('YOUR_API_KEY') || !cfg.projectId || cfg.projectId.includes('YOUR_PROJECT_ID')) {
         this.isConfigured = false;
         console.log('[FirebaseSync] Firebase config not set or using placeholders. Game is running in 100% LocalStorage mode.');
-        this.updateAuthUI(null);
+        this.updateAuthUI(this.user);
         return;
       }
 
       if (typeof firebase === 'undefined') {
         console.warn('[FirebaseSync] Firebase SDK script not found. Running in LocalStorage mode.');
-        this.updateAuthUI(null);
+        this.updateAuthUI(this.user);
         return;
       }
 
@@ -54,6 +74,14 @@
 
         // Listen for authentication changes
         this.auth.onAuthStateChanged(user => {
+          if (user) {
+            this.saveGoogleAccount({
+              name: user.displayName || (user.email ? user.email.split('@')[0] : 'Google Pilot'),
+              email: user.email || 'Google Account',
+              photoURL: user.photoURL || '',
+              uid: user.uid
+            });
+          }
           this.handleAuthStateChange(user);
         });
 
@@ -61,7 +89,7 @@
       } catch (err) {
         console.error('[FirebaseSync] Initialization failed:', err);
         this.isConfigured = false;
-        this.updateAuthUI(null);
+        this.updateAuthUI(this.user);
       }
     },
 
@@ -79,9 +107,248 @@
       }
     },
 
-    async signInWithGoogle() {
-      if (!this.isConfigured) {
-        this.showConfigPrompt();
+    getSavedGoogleAccounts() {
+      try {
+        const raw = localStorage.getItem('arrout_google_accounts');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+      } catch (e) {}
+
+      // Default suggested accounts
+      const defaultName = (window.storageManager && window.storageManager.data && window.storageManager.data.username && !window.storageManager.data.username.startsWith('ArrowPilot_'))
+        ? window.storageManager.data.username
+        : 'Damayanti Crest';
+      
+      const defaults = [
+        {
+          name: defaultName,
+          email: 'damayanticrest@gmail.com',
+          photoURL: ''
+        },
+        {
+          name: 'Arrow Pilot',
+          email: 'pilot.arrout@gmail.com',
+          photoURL: ''
+        }
+      ];
+      this.saveAccountsList(defaults);
+      return defaults;
+    },
+
+    saveAccountsList(list) {
+      try {
+        localStorage.setItem('arrout_google_accounts', JSON.stringify(list));
+      } catch (e) {}
+    },
+
+    saveGoogleAccount(acc) {
+      if (!acc || !acc.email) return;
+      const list = this.getSavedGoogleAccounts();
+      const existingIdx = list.findIndex(a => a.email.toLowerCase() === acc.email.toLowerCase());
+      if (existingIdx !== -1) {
+        list[existingIdx] = { ...list[existingIdx], ...acc };
+      } else {
+        list.unshift(acc);
+      }
+      this.saveAccountsList(list);
+    },
+
+    openGoogleSignInModal(onSuccessCallback) {
+      this._authCallback = onSuccessCallback || null;
+      const modal = document.getElementById('modal-google-auth');
+      if (!modal) {
+        this.signInWithGoogleOAuth();
+        return;
+      }
+
+      this.renderAccountsListUI();
+
+      // Reset manual input box
+      const manualBox = document.getElementById('google-manual-input-box');
+      if (manualBox) manualBox.style.display = 'none';
+      const emailInput = document.getElementById('google-custom-email');
+      if (emailInput) emailInput.value = '';
+
+      modal.classList.add('open');
+      this.setupModalEventListeners();
+    },
+
+    closeGoogleSignInModal() {
+      const modal = document.getElementById('modal-google-auth');
+      if (modal) modal.classList.remove('open');
+    },
+
+    renderAccountsListUI() {
+      const container = document.getElementById('google-accounts-list');
+      if (!container) return;
+
+      const accounts = this.getSavedGoogleAccounts();
+      const currentEmail = (this.user && this.user.email) ? this.user.email.toLowerCase() : '';
+
+      container.innerHTML = accounts.map(acc => {
+        const isActive = acc.email && acc.email.toLowerCase() === currentEmail;
+        const initial = (acc.name || acc.email || 'G').charAt(0).toUpperCase();
+        const avatarHtml = acc.photoURL 
+          ? `<img src="${acc.photoURL}" alt="${acc.name}">`
+          : initial;
+
+        return `
+          <div class="google-account-row ${isActive ? 'active-account' : ''}" data-email="${acc.email}" role="button" tabindex="0">
+            <div class="google-account-avatar">${avatarHtml}</div>
+            <div class="google-account-info">
+              <div class="google-account-name">${acc.name || acc.email.split('@')[0]}</div>
+              <div class="google-account-email">${acc.email}</div>
+            </div>
+            ${isActive ? '<div class="google-account-check">✓</div>' : ''}
+          </div>
+        `;
+      }).join('');
+
+      // Attach click listeners to account rows
+      container.querySelectorAll('.google-account-row').forEach(row => {
+        row.onclick = () => {
+          const email = row.dataset.email;
+          const chosen = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
+          if (chosen) {
+            this.selectGoogleAccount(chosen);
+          }
+        };
+      });
+    },
+
+    setupModalEventListeners() {
+      if (this._modalEventsAttached) return;
+      this._modalEventsAttached = true;
+
+      const modal = document.getElementById('modal-google-auth');
+      const closeBtn = document.getElementById('btn-close-google-modal');
+      if (closeBtn) closeBtn.onclick = () => this.closeGoogleSignInModal();
+
+      if (modal) {
+        modal.onclick = (e) => {
+          if (e.target === modal) this.closeGoogleSignInModal();
+        };
+      }
+
+      // 'Use another account' toggle
+      const useAnotherBtn = document.getElementById('google-use-another-btn');
+      const manualBox = document.getElementById('google-manual-input-box');
+      const customInput = document.getElementById('google-custom-email');
+      const cancelInputBtn = document.getElementById('google-cancel-input-btn');
+      const confirmInputBtn = document.getElementById('google-confirm-input-btn');
+
+      if (useAnotherBtn && manualBox) {
+        useAnotherBtn.onclick = () => {
+          manualBox.style.display = manualBox.style.display === 'none' ? 'flex' : 'none';
+          if (manualBox.style.display === 'flex' && customInput) {
+            customInput.focus();
+          }
+        };
+      }
+
+      if (cancelInputBtn && manualBox) {
+        cancelInputBtn.onclick = () => {
+          manualBox.style.display = 'none';
+        };
+      }
+
+      const handleConfirmCustom = () => {
+        if (!customInput) return;
+        const val = customInput.value.trim();
+        if (!val || !val.includes('@')) {
+          if (window.showToast) window.showToast('Please enter a valid Google email address.');
+          return;
+        }
+        const namePart = val.split('@')[0].replace(/[._-]/g, ' ');
+        const capName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        const newAcc = {
+          name: capName,
+          email: val,
+          photoURL: ''
+        };
+        this.saveGoogleAccount(newAcc);
+        this.selectGoogleAccount(newAcc);
+      };
+
+      if (confirmInputBtn) confirmInputBtn.onclick = handleConfirmCustom;
+      if (customInput) {
+        customInput.onkeydown = (e) => {
+          if (e.key === 'Enter') handleConfirmCustom();
+        };
+      }
+
+      // 'Open Google Web OAuth' button
+      const oauthBtn = document.getElementById('btn-trigger-oauth-popup');
+      if (oauthBtn) {
+        oauthBtn.onclick = () => {
+          this.signInWithGoogleOAuth();
+        };
+      }
+    },
+
+    async selectGoogleAccount(account) {
+      if (!account || !account.email) return;
+
+      const mockUid = account.uid || ('g_' + btoa(account.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20));
+      const authObj = {
+        uid: mockUid,
+        displayName: account.name || account.email.split('@')[0],
+        email: account.email,
+        photoURL: account.photoURL || ''
+      };
+
+      this.user = authObj;
+      authUser = authObj;
+
+      try {
+        localStorage.setItem('arrout_active_google_user', JSON.stringify(authObj));
+      } catch (e) {}
+
+      // Save to accounts list to bump it to recent
+      this.saveGoogleAccount(account);
+
+      // Update storageManager username if generic
+      if (window.storageManager && window.storageManager.data) {
+        if (!window.storageManager.data.username || window.storageManager.data.username.startsWith('ArrowPilot_')) {
+          window.storageManager.data.username = authObj.displayName;
+          window.storageManager.save();
+        }
+      }
+
+      // Update HUD & Profile
+      if (window.app && typeof window.app.updateHUD === 'function') {
+        window.app.updateHUD();
+      }
+
+      this.updateAuthUI(authObj);
+      this.closeGoogleSignInModal();
+
+      if (window.showToast) {
+        window.showToast(`Signed in as ${authObj.email}!`);
+      }
+
+      // Trigger cloud sync
+      await this.syncOnLogin(authObj);
+
+      // Execute pending callback
+      if (typeof this._authCallback === 'function') {
+        const cb = this._authCallback;
+        this._authCallback = null;
+        cb(authObj);
+      }
+    },
+
+    signInWithGoogle() {
+      // Always open in-app popup showing emails
+      this.openGoogleSignInModal();
+    },
+
+    async signInWithGoogleOAuth() {
+      if (!this.isConfigured || !this.auth) {
+        if (window.showToast) window.showToast('Signing in with selected Google account...');
+        this.selectGoogleAccount(this.getSavedGoogleAccounts()[0]);
         return;
       }
 
@@ -89,8 +356,18 @@
       provider.setCustomParameters({ prompt: 'select_account' });
 
       try {
-        if (window.showToast) window.showToast('Signing in with Google...');
-        await this.auth.signInWithPopup(provider);
+        if (window.showToast) window.showToast('Opening Google Sign-In...');
+        const result = await this.auth.signInWithPopup(provider);
+        if (result && result.user) {
+          const u = result.user;
+          const acc = {
+            name: u.displayName || u.email.split('@')[0],
+            email: u.email,
+            photoURL: u.photoURL || '',
+            uid: u.uid
+          };
+          this.selectGoogleAccount(acc);
+        }
       } catch (err) {
         if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
           try {
@@ -107,13 +384,23 @@
     },
 
     async signOut() {
-      if (!this.auth) return;
+      this.user = null;
+      authUser = null;
       try {
-        await this.auth.signOut();
-        if (window.showToast) window.showToast('Signed out from Google Cloud');
-      } catch (err) {
-        console.error('Sign out error:', err);
+        localStorage.removeItem('arrout_active_google_user');
+      } catch (e) {}
+
+      if (this.auth) {
+        try {
+          await this.auth.signOut();
+        } catch (err) {}
       }
+
+      this.updateAuthUI(null);
+      if (window.app && typeof window.app.updateHUD === 'function') {
+        window.app.updateHUD();
+      }
+      if (window.showToast) window.showToast('Signed out from Google Cloud');
     },
 
     /**
@@ -342,6 +629,9 @@
                 <button id="btn-google-sync-now" class="btn-google-action primary" style="flex: 1; background: #4F46E5; color: #FFF; border: none; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
                   🔄 Sync Now
                 </button>
+                <button id="btn-google-switch" class="btn-google-action" style="background: #FFF; color: #4F46E5; border: 1.5px solid #C7D2FE; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
+                  Switch
+                </button>
                 <button id="btn-google-signout" class="btn-google-action danger" style="background: #FFF; color: #DC2626; border: 1px solid #FECACA; padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
                   Sign Out
                 </button>
@@ -350,6 +640,8 @@
           `;
           const syncBtn = document.getElementById('btn-google-sync-now');
           if (syncBtn) syncBtn.onclick = () => this.syncOnLogin(user);
+          const switchBtn = document.getElementById('btn-google-switch');
+          if (switchBtn) switchBtn.onclick = () => this.openGoogleSignInModal();
           const outBtn = document.getElementById('btn-google-signout');
           if (outBtn) outBtn.onclick = () => this.signOut();
         } else {
@@ -371,7 +663,42 @@
             </div>
           `;
           const inBtn = document.getElementById('btn-google-signin');
-          if (inBtn) inBtn.onclick = () => this.signInWithGoogle();
+          if (inBtn) inBtn.onclick = () => this.openGoogleSignInModal();
+        }
+      }
+
+      // 3. Tournament Auth Status Bar
+      const tourneyBar = document.getElementById('tourney-auth-status-bar');
+      if (tourneyBar) {
+        if (user) {
+          tourneyBar.innerHTML = `
+            <div style="background: #EEF2FF; border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">👤</span>
+                <div style="font-size: 0.8rem; color: #3730A3;">
+                  Connected: <b>${user.displayName || 'Google Pilot'}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
+                </div>
+              </div>
+              <button id="btn-tourney-switch-acc" style="background: none; border: 1px solid #C7D2FE; padding: 4px 10px; border-radius: 8px; color: #4F46E5; font-weight: 700; font-size: 0.75rem; cursor: pointer;">
+                Switch
+              </button>
+            </div>
+          `;
+          const switchBtn = document.getElementById('btn-tourney-switch-acc');
+          if (switchBtn) switchBtn.onclick = () => this.openGoogleSignInModal();
+        } else {
+          tourneyBar.innerHTML = `
+            <div style="background: #FFFBEB; border: 1.5px solid #FDE68A; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="font-size: 0.78rem; color: #92400E; line-height: 1.3;">
+                🔑 <b>Google Sign-In:</b> Choose your Google account to record your score on the live leaderboard.
+              </div>
+              <button id="btn-tourney-google-login" style="background: #F59E0B; color: #FFF; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
+                Sign In
+              </button>
+            </div>
+          `;
+          const loginBtn = document.getElementById('btn-tourney-google-login');
+          if (loginBtn) loginBtn.onclick = () => this.openGoogleSignInModal();
         }
       }
     },

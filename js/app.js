@@ -555,10 +555,26 @@ class ArroutApp {
     const msg = document.getElementById('tournament-locked-msg');
     if (msg) msg.style.display = 'none';
 
+    if (window.FirebaseSync && typeof window.FirebaseSync.updateAuthUI === 'function') {
+      window.FirebaseSync.updateAuthUI(window.FirebaseSync.user);
+    }
+
     const btn = document.getElementById('btn-enter-tournament');
     if (btn) {
       btn.disabled = false;
       btn.onclick = () => {
+        const sync = window.FirebaseSync;
+        const currentGoogleUser = (sync && sync.user) || (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser);
+        if (!currentGoogleUser) {
+          if (sync && typeof sync.openGoogleSignInModal === 'function') {
+            sync.openGoogleSignInModal(() => {
+              this.renderWeeklyTournament();
+              this._tourney = { level: info.level };
+              this.navigate('puzzle', info.level);
+            });
+            return;
+          }
+        }
         this._tourney = { level: info.level };
         this.navigate('puzzle', info.level);
       };
