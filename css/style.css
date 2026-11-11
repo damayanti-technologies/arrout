@@ -1702,6 +1702,25 @@ html.screen-home-active {
 }
 
 /* Dark Mode Harmonization */
+html[data-dark="1"] .google-auth-card.signed-out {
+  background: #1F2D4A !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+html[data-dark="1"] .google-auth-card.signed-in {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%) !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+html[data-dark="1"] .google-auth-title {
+  color: #E8EEF8 !important;
+}
+html[data-dark="1"] .google-auth-user {
+  color: #A5B4FC !important;
+}
+html[data-dark="1"] .btn-google-signin {
+  background: #0F172A !important;
+  color: #E8EEF8 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
 html[data-dark="1"] .home-pill-badge {
   background: rgba(31, 45, 74, 0.85);
   border-color: rgba(255, 255, 255, 0.08);

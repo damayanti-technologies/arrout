@@ -651,6 +651,11 @@ class ArroutApp {
     set('profile-stat-winrate', played ? Math.round(won / played * 100) + '%' : '0%');
     set('profile-stat-rating', data.rating || 1200);
 
+    // Refresh Google Auth UI in Profile screen
+    if (window.FirebaseSync && typeof window.FirebaseSync.updateAuthUI === 'function') {
+      window.FirebaseSync.updateAuthUI(window.FirebaseSync.user);
+    }
+
     const achContainer = document.getElementById('profile-achievements-list');
     if (!achContainer) return;
     achContainer.innerHTML = '';

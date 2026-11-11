@@ -524,6 +524,9 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <button id="btn-settings-open" class="btn-back-soft" data-nav="settings" aria-label="Settings">⚙️</button>
         </div>
 
+        <!-- Google Cloud Account & Sign-in Box -->
+        <div id="profile-google-auth-box"></div>
+
         <div style="background: #FFF; border-radius: 28px; padding: 22px; text-align: center; box-shadow: var(--clay-shadow); margin-bottom: 16px;">
           <div id="profile-avatar-large" style="width: 80px; height: 80px; border-radius: 50%; background: #E8EEF8; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 12px auto;">🎯</div>
           <label for="profile-username-input" class="profile-name-label">Username</label>
@@ -678,6 +681,14 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
     <div id="confetti-canvas-wrapper" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 105;"></div>
 
   </div>
+
+<!-- Firebase SDKs & Google Cloud Sync -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/firebase-sync.js"></script>
 
 <script src="js/audio.js"></script>
 <script src="js/levels.js"></script>
