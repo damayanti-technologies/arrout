@@ -33,6 +33,15 @@ class ArroutApp {
     this.renderWeeklyTournament();
     this.renderDailyChallenge();
 
+    // Lock scroll movement on home screen so it stays completely fixed
+    const isHome = () => document.body.classList.contains('screen-home-active');
+    window.addEventListener('wheel', (e) => {
+      if (isHome()) e.preventDefault();
+    }, { passive: false });
+    window.addEventListener('touchmove', (e) => {
+      if (isHome()) e.preventDefault();
+    }, { passive: false });
+
     // Initial route check
     this.handleRoute(window.location.hash || '#/');
   }
@@ -175,6 +184,13 @@ class ArroutApp {
       appFrame.classList.toggle('screen-home-active', this.currentScreen === 'home');
     }
     document.body.classList.toggle('screen-home-active', this.currentScreen === 'home');
+    document.documentElement.classList.toggle('screen-home-active', this.currentScreen === 'home');
+
+    if (this.currentScreen === 'home') {
+      window.scrollTo(0, 0);
+      const vp = document.querySelector('.app-viewport');
+      if (vp) vp.scrollTop = 0;
+    }
 
     // Update bottom navigation bar active state
     document.querySelectorAll('.floating-bottom-nav .nav-pill-btn').forEach(btn => {

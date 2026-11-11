@@ -1280,12 +1280,30 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
 .cheer-popup .cf{display:none}
 
 /* ===== MODERN HOME SCREEN REDESIGN ===== */
+body.screen-home-active,
+html.screen-home-active {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+  touch-action: pan-x pinch-zoom;
+}
+.mobile-app-frame.screen-home-active {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+}
 .mobile-app-frame.screen-home-active .app-viewport {
-  padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px) !important;
-  overflow-y: auto !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+  overflow: hidden !important;
+  overflow-y: hidden !important;
   overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch;
-  display: block;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
 }
 .mobile-app-frame.screen-home-active .app-viewport::-webkit-scrollbar {
   display: none !important;
@@ -1295,11 +1313,18 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
-  justify-content: flex-start !important;
-  gap: 12px !important;
-  padding: 0 0 24px 0 !important;
-  min-height: 100% !important;
+  justify-content: space-between !important;
+  gap: clamp(4px, 1.1vh, 10px) !important;
+  padding: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
   position: relative !important;
+  box-sizing: border-box !important;
 }
 
 /* Home Top Navigation */
@@ -1309,7 +1334,7 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   align-items: center;
   position: relative;
   z-index: 10;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 .home-pill-badge {
   display: inline-flex;
@@ -1370,21 +1395,21 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   justify-content: center;
   position: relative;
   z-index: 5;
-  margin: 4px 0 8px;
+  margin: clamp(0px, 0.3vh, 4px) 0 clamp(2px, 0.5vh, 6px);
   text-align: center;
 }
 .hero-emblem-wrap {
   position: relative;
-  width: 78px;
-  height: 78px;
-  margin-bottom: 6px;
+  width: clamp(54px, 7.5vh, 74px);
+  height: clamp(54px, 7.5vh, 74px);
+  margin-bottom: clamp(2px, 0.5vh, 5px);
   cursor: pointer;
   animation: emblemFloat 3.5s ease-in-out infinite;
   user-select: none;
 }
 @keyframes emblemFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
+  50% { transform: translateY(-5px); }
 }
 .emblem-pulse-ring {
   position: absolute;
@@ -1418,7 +1443,7 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
 
 .home-logo {
   font-family: var(--font-serif);
-  font-size: 2.35rem;
+  font-size: clamp(1.85rem, 3vh, 2.35rem);
   font-weight: 800;
   letter-spacing: 2px;
   color: var(--text-navy);
@@ -1431,16 +1456,16 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   font-weight: 800;
   letter-spacing: 2.5px;
   color: #6366F1;
-  margin-top: 4px;
+  margin-top: clamp(2px, 0.4vh, 4px);
 }
 
 /* Glassmorphic Tip / Quote Pill */
 .home-quote-pill {
-  margin-top: 10px;
+  margin-top: clamp(4px, 0.7vh, 8px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 16px;
+  padding: clamp(4px, 0.7vh, 6px) 14px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 20px;
@@ -1448,7 +1473,7 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   backdrop-filter: blur(8px);
   max-width: 320px;
   color: var(--text-navy);
-  font-size: 0.82rem;
+  font-size: clamp(0.75rem, 1.1vh, 0.82rem);
   font-weight: 600;
   line-height: 1.35;
   transition: opacity 0.3s;
@@ -1485,8 +1510,8 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   display: block;
   width: 100%;
   background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-  border-radius: 22px;
-  padding: 16px 20px;
+  border-radius: clamp(16px, 2vh, 22px);
+  padding: clamp(10px, 1.4vh, 15px) clamp(14px, 2vh, 20px);
   box-shadow: 0 10px 26px rgba(79, 70, 229, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4);
   cursor: pointer;
   overflow: hidden;
@@ -1513,11 +1538,11 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(10px, 1.5vh, 14px);
 }
 .play-icon-bubble {
-  width: 48px;
-  height: 48px;
+  width: clamp(38px, 5vh, 46px);
+  height: clamp(38px, 5vh, 46px);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.22);
   border: 1px solid rgba(255, 255, 255, 0.45);
@@ -1540,7 +1565,7 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   text-align: left;
 }
 .play-action-label {
-  font-size: 0.75rem;
+  font-size: clamp(0.68rem, 0.9vh, 0.75rem);
   font-weight: 800;
   letter-spacing: 1.5px;
   color: rgba(255, 255, 255, 0.85);
@@ -1548,14 +1573,14 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
 }
 .play-level-highlight {
   font-family: var(--font-serif);
-  font-size: 1.45rem;
+  font-size: clamp(1.2rem, 1.8vh, 1.45rem);
   font-weight: 800;
   color: #FFFFFF;
   line-height: 1.2;
 }
 .play-arrow-chevron {
-  width: 36px;
-  height: 36px;
+  width: clamp(30px, 4vh, 36px);
+  height: clamp(30px, 4vh, 36px);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.18);
   display: flex;
@@ -1581,24 +1606,24 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   letter-spacing: 1.2px;
   color: var(--text-muted);
   text-transform: uppercase;
-  margin-bottom: 8px;
+  margin-bottom: clamp(3px, 0.6vh, 6px);
   padding-left: 2px;
 }
 .home-modes-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: clamp(6px, 0.9vh, 9px);
 }
 .mode-clay-card {
   background: #FFFFFF;
-  border-radius: 20px;
-  padding: 14px;
+  border-radius: clamp(14px, 1.8vh, 18px);
+  padding: clamp(6px, 0.9vh, 10px) clamp(8px, 1.2vh, 12px);
   box-shadow: var(--clay-shadow);
   border: 1px solid rgba(255, 255, 255, 0.8);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: clamp(3px, 0.6vh, 6px);
   cursor: pointer;
   position: relative;
   transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s;
@@ -1662,7 +1687,7 @@ img.play-dolphin{position:absolute;left:0!important;width:165px!important;height
   align-items: center;
   background: linear-gradient(135deg, #FFFDF5 0%, #FEF9C3 100%);
   border: 1.5px solid #FDE047;
-  padding: 12px 16px;
+  padding: clamp(8px, 1.1vh, 12px) clamp(12px, 1.8vh, 16px);
 }
 .tourney-banner-left {
   display: flex;
