@@ -1293,7 +1293,7 @@ html.screen-home-active {
   overscroll-behavior-y: none !important;
 }
 .mobile-app-frame.screen-home-active .app-viewport {
-  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + 8px) !important;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px calc(env(safe-area-inset-bottom, 0px) + clamp(28px, 4.2vh, 40px)) !important;
   overflow: hidden !important;
   overflow-y: hidden !important;
   overflow-x: hidden !important;
@@ -1314,8 +1314,8 @@ html.screen-home-active {
   flex-direction: column !important;
   align-items: stretch !important;
   justify-content: space-between !important;
-  gap: clamp(4px, 1.1vh, 10px) !important;
-  padding: 0 !important;
+  gap: clamp(4px, 0.9vh, 8px) !important;
+  padding: 0 0 clamp(4px, 0.7vh, 8px) 0 !important;
   height: 100% !important;
   max-height: 100% !important;
   flex: 1 1 0% !important;
@@ -1395,14 +1395,14 @@ html.screen-home-active {
   justify-content: center;
   position: relative;
   z-index: 5;
-  margin: clamp(0px, 0.3vh, 4px) 0 clamp(2px, 0.5vh, 6px);
+  margin: 0 0 clamp(2px, 0.4vh, 4px);
   text-align: center;
 }
 .hero-emblem-wrap {
   position: relative;
   width: clamp(54px, 7.5vh, 74px);
   height: clamp(54px, 7.5vh, 74px);
-  margin-bottom: clamp(2px, 0.5vh, 5px);
+  margin-bottom: clamp(1px, 0.3vh, 3px);
   cursor: pointer;
   animation: emblemFloat 3.5s ease-in-out infinite;
   user-select: none;
@@ -1472,12 +1472,12 @@ html.screen-home-active {
   font-weight: 800;
   letter-spacing: 2.5px;
   color: #6366F1;
-  margin-top: clamp(2px, 0.4vh, 4px);
+  margin-top: clamp(1px, 0.2vh, 2px);
 }
 
 /* Glassmorphic Tip / Quote Pill */
 .home-quote-pill {
-  margin-top: clamp(4px, 0.7vh, 8px);
+  margin-top: clamp(2px, 0.4vh, 5px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
