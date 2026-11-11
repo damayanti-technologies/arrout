@@ -116,21 +116,61 @@
         }
       } catch (e) {}
 
-      // Default suggested accounts
-      const defaultName = (window.storageManager && window.storageManager.data && window.storageManager.data.username && !window.storageManager.data.username.startsWith('ArrowPilot_'))
-        ? window.storageManager.data.username
-        : 'Damayanti Crest';
-      
+      // Default real device Google accounts matching native Android account chooser
       const defaults = [
         {
-          name: defaultName,
-          email: 'damayanticrest@gmail.com',
-          photoURL: ''
+          name: 'Reshwanth Gangula',
+          email: 'reshwanthreddy.gangula@gmail.com',
+          avatarColor: '#1A73E8',
+          initial: 'R'
         },
         {
-          name: 'Arrow Pilot',
-          email: 'pilot.arrout@gmail.com',
-          photoURL: ''
+          name: 'Back up',
+          email: 'reshwanthphotos.1@gmail.com',
+          avatarColor: '#E91E63',
+          initial: 'B'
+        },
+        {
+          name: 'Reshwanth',
+          email: 'reshwanthreddy.gangula.1@gmail.com',
+          avatarColor: '#8E24AA',
+          initial: 'R'
+        },
+        {
+          name: 'Gangula Reshwanth Reddy',
+          email: 'reshwanthreddy4646@gmail.com',
+          avatarColor: '#D93025',
+          initial: 'R'
+        },
+        {
+          name: 'Reshwanth',
+          email: 'reshwanth.township@gmail.com',
+          avatarColor: '#F4511E',
+          initial: 'R'
+        },
+        {
+          name: 'sannivesham ..',
+          email: 'admin@sannivesham.com',
+          avatarColor: '#795548',
+          initial: 's'
+        },
+        {
+          name: 'Sannivesham',
+          email: 'yt.sannivesham@gmail.com',
+          avatarColor: '#00ACC1',
+          initial: 'S'
+        },
+        {
+          name: 'web sannivesham',
+          email: 'web.sannivesham@gmail.com',
+          avatarColor: '#8D6E63',
+          initial: 'w'
+        },
+        {
+          name: '24311A04X3 (E) Reshwanth',
+          email: '24311a04x3@ece.sreenidhi.edu.in',
+          avatarColor: '#3F51B5',
+          initial: 'R'
         }
       ];
       this.saveAccountsList(defaults);
@@ -186,13 +226,15 @@
 
       const accounts = this.getSavedGoogleAccounts();
       const currentEmail = (this.user && this.user.email) ? this.user.email.toLowerCase() : '';
+      const palette = ['#1A73E8', '#E91E63', '#8E24AA', '#D93025', '#F4511E', '#795548', '#00ACC1', '#8D6E63', '#3F51B5'];
 
-      container.innerHTML = accounts.map(acc => {
+      container.innerHTML = accounts.map((acc, idx) => {
         const isActive = acc.email && acc.email.toLowerCase() === currentEmail;
-        const initial = (acc.name || acc.email || 'G').charAt(0).toUpperCase();
+        const initial = acc.initial || (acc.name || acc.email || 'G').charAt(0);
+        const avatarBg = acc.avatarColor || palette[idx % palette.length];
         const avatarHtml = acc.photoURL 
           ? `<img src="${acc.photoURL}" alt="${acc.name}">`
-          : initial;
+          : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:${avatarBg};border-radius:50%;color:#FFF;font-weight:500;">${initial}</span>`;
 
         return `
           <div class="google-account-row ${isActive ? 'active-account' : ''}" data-email="${acc.email}" role="button" tabindex="0">
@@ -341,8 +383,29 @@
     },
 
     signInWithGoogle() {
-      // Always open in-app popup showing emails
+      // 1. If running in Android app with native AndroidBridge
+      if (window.AndroidBridge && typeof window.AndroidBridge.signInWithGoogle === 'function') {
+        try {
+          window.AndroidBridge.signInWithGoogle();
+          return;
+        } catch (e) {
+          console.warn('[FirebaseSync] Android native Google Sign-In call failed, opening in-app bottom sheet', e);
+        }
+      }
+
+      // 2. Open in-app Google Account Chooser bottom sheet
       this.openGoogleSignInModal();
+    },
+
+    onNativeGoogleSignInSuccess(data) {
+      if (!data || !data.email) return;
+      this.selectGoogleAccount({
+        name: data.displayName || data.email.split('@')[0],
+        email: data.email,
+        photoURL: data.photoURL || '',
+        uid: data.uid || ('g_' + btoa(data.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20)),
+        idToken: data.idToken || ''
+      });
     },
 
     async signInWithGoogleOAuth() {
