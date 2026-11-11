@@ -252,7 +252,7 @@ class ArroutApp {
       });
     });
 
-    // Interactive hero emblem sound & vibration
+    // Interactive hero emblem sound & vibration & pop animation
     const emblem = document.getElementById('hero-interactive-emblem');
     if (emblem) {
       emblem.addEventListener('click', () => {
@@ -260,6 +260,9 @@ class ArroutApp {
           window.soundEngine.playEscape();
           window.soundEngine.vibrate(15);
         }
+        emblem.classList.remove('emblem-bounce');
+        void emblem.offsetWidth;
+        emblem.classList.add('emblem-bounce');
       });
     }
   }
