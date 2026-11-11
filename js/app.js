@@ -129,6 +129,15 @@ class ArroutApp {
     document.querySelectorAll('.user-name-display').forEach(el => el.textContent = data.username);
     const inp = document.getElementById('profile-username-input');
     if (inp && document.activeElement !== inp && data.username) inp.value = data.username;
+
+    // Home screen quick stats
+    const cleared = this.clearedLevelNumbers().length;
+    const homeCleared = document.getElementById('home-cleared-count');
+    if (homeCleared) homeCleared.textContent = `${cleared}/1000`;
+    const homeStreak = document.getElementById('home-streak-count');
+    if (homeStreak) homeStreak.textContent = (data.stats && data.stats.streakDays) || 0;
+    const homePlayer = document.getElementById('home-player-name');
+    if (homePlayer) homePlayer.textContent = data.username || 'Player';
   }
 
   switchScreen(screenName, levelNum = null, updateHistory = true) {
@@ -226,6 +235,17 @@ class ArroutApp {
         }
       });
     });
+
+    // Interactive hero emblem sound & vibration
+    const emblem = document.getElementById('hero-interactive-emblem');
+    if (emblem) {
+      emblem.addEventListener('click', () => {
+        if (window.soundEngine) {
+          window.soundEngine.playEscape();
+          window.soundEngine.vibrate(15);
+        }
+      });
+    }
   }
 
   setupScreens() {
@@ -534,7 +554,7 @@ class ArroutApp {
     const rows = document.getElementById('tournament-leaderboard-rows');
     if (rows) {
       const sc = info.score;
-      const myUid = (firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid) ||
+      const myUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid) ||
                     (window.storageManager && window.storageManager.data && window.storageManager.data.playerId);
 
       const renderBoard = (globalScores = []) => {
@@ -626,14 +646,17 @@ class ArroutApp {
     achContainer.innerHTML = '';
     data.achievements.forEach(ach => {
       const item = document.createElement('div');
-      item.style.cssText = 'background: #FFF; border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; box-shadow: var(--clay-shadow);' + (ach.unlocked ? '' : 'opacity:0.75;');
+      item.style.cssText = 'background: #FFF; border-radius: 16px; padding: 12px 16px; display: flex; align-items: center; box-shadow: var(--clay-shadow);' + (ach.unlocked ? 'border: 1px solid #C7D2FE;' : 'opacity:0.65;');
+      const badge = ach.unlocked
+        ? '<span style="font-size: 0.68rem; font-weight: 800; background: #ECFDF5; color: #059669; padding: 4px 10px; border-radius: 10px; letter-spacing: 0.5px;">UNLOCKED</span>'
+        : '<span style="font-size: 0.68rem; font-weight: 800; background: #F1F5F9; color: var(--text-muted); padding: 4px 10px; border-radius: 10px; letter-spacing: 0.5px;">LOCKED</span>';
       item.innerHTML = `
         <div style="font-size: 1.6rem; margin-right: 12px;">${ach.unlocked ? '🏆' : '🔒'}</div>
         <div style="flex: 1;">
           <div style="font-weight: 800; font-size: 0.9rem; color: var(--text-navy);">${ach.name}</div>
           <div style="font-size: 0.72rem; color: var(--text-muted);">${ach.desc}</div>
         </div>
-        <div style="font-size: 0.82rem; font-weight: 800; color: var(--accent-gold);">+${ach.reward} 🪙</div>
+        <div>${badge}</div>
       `;
       achContainer.appendChild(item);
     });

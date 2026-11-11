@@ -7,7 +7,7 @@
  */
 
 const STORAGE_KEY = 'arrow_escape_player_data_v1';
-const RESET_KEYS = [STORAGE_KEY, 'arrout_settings_v1', 'arrout_themes_v1', 'arrout_daily_v1', 'arrout_battle_v1', 'arrout_last_quote'];
+const RESET_KEYS = [STORAGE_KEY, 'arrout_settings_v1', 'arrout_themes_v1', 'arrout_daily_v1', 'arrout_battle_v1', 'arrout_last_quote', 'arrout_tutorial_v1'];
 
 const DEFAULT_ACHIEVEMENTS = [
   { id: 'first_escape', name: 'First Freedom', desc: 'Clear your first arrow puzzle.', unlocked: false },

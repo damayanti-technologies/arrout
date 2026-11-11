@@ -1,4 +1,21 @@
-# Arrout / Arrow Escape: what changed in v2.1.0
+# Arrout / Arrow Escape: Changelog
+
+## v2.2.0 (Launch Readiness & Home Redesign)
+- **Fixed critical startup crash**: Guarded `firebase` identifier references in `js/app.js` and `js/modes.js` so constructor initialization never aborts when running offline/local storage.
+- **Fixed Battle Matchmaking TypeError**: Restored proper binding of `app.start1v1Matchmaking` and `app.cancel1v1Matchmaking`.
+- **Complete Home Page Redesign**:
+  - Replaced the empty void with an interactive animated Compass Arrow emblem with floating particles and tap chime.
+  - Added modern glassmorphic cycling tip pill ("Every arrow has a way out. Find it!").
+  - Added Hero "CONTINUE PUZZLE - Level X" action card with glowing play bubble and dynamic next level indicator.
+  - Implemented 2-column tactile game modes grid (Direct access to all 1000 Levels, Daily Challenge, Battle vs AI, Friends Room, and Weekly Tournament banner).
+  - Top header bar with live player name chip, streak flame counter, and settings shortcut.
+- **Fixed Achievements Display**: Cleaned up Profile achievements to show UNLOCKED / LOCKED status badges instead of `+undefined 🪙`.
+- **Cleaned Up Coin Reversion Remnants**: Removed frozen 2450 coin badges in headers, cleaned up victory/1v1 modals, and updated descriptions.
+- **Fixed Data Reset**: Included `arrout_tutorial_v1` in `StorageManager.resetAll()` so tutorial state resets properly on clean wipe.
+- **Added SVG Favicon**: Direct inline vector arrow target icon to prevent 404 `/favicon.ico`.
+- **Harmonized Dark Mode**: Enhanced contrast and dark night styling across all home cards and background elements.
+
+## v2.1.0
 
 ## Bugs fixed
 - Router ran twice on every navigation (popstate + hashchange). Now `hashchange` only.

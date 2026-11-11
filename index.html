@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#FAF6F0">
 <meta name="description" content="Arrout: a calm arrow-escape puzzle game. Tap the arrows in the right order to clear the board.">
 <title>Arrout</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2246%22 fill=%22%236366F1%22/><path d=%22M28 50h44M52 32l20 18-20 18%22 stroke=%22%23fff%22 stroke-width=%228%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22 fill=%22none%22/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Righteous&display=swap">
@@ -16,10 +17,6 @@
 <link rel="stylesheet" href="css/extras-c.css">
 <!-- Level data: deferred so parsing the page is not blocked; everything reads it lazily at play time. -->
 <style>
-/* dolphin removed: speech bubble now sits centred above the PLAY card */
-.play-fixed .quote-bubble{left:50%!important;right:auto!important;transform:translateX(-50%);width:230px!important;top:auto!important;bottom:calc(100% + 14px)!important;text-align:center}
-.play-fixed .quote-bubble::after{left:50%!important;top:auto!important;bottom:-9px!important;margin:0 0 0 -9px!important;border-style:solid!important;border-width:9px 9px 0 9px!important;border-color:#fff transparent transparent transparent!important}
-.dol-group{pointer-events:none}
 /* ===== First-launch tutorial ===== */
 #arrout-tut{position:absolute;inset:0;z-index:2000;display:flex;flex-direction:column;align-items:stretch;
   background:linear-gradient(180deg,#F2F8FF 0%,#EEF4FF 55%,#EAFAF8 100%);color:#152642;
@@ -98,10 +95,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
       </div>
 
       <div class="header-right">
-        <div class="coin-pill">
-          <div class="coin-icon-gold">★</div>
-          <span class="user-coin-count">2450</span>
-        </div>
         <div class="avatar-thumbnail user-avatar-display" data-nav="profile">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#334155">
             <path d="M12 12C14.21 12 16 10.21 16 8C16 5.79 14.21 4 12 4C9.79 4 8 5.79 8 8C8 10.21 9.79 12 12 12ZM12 14C9.33 14 4 15.34 4 18V20H20V18C20 15.34 14.67 14 12 14Z" />
@@ -117,137 +110,210 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
     <main class="app-viewport">
 
       <!-- ================= HOME SCREEN ================= -->
-      <section id="screen-home" class="app-screen active"><!-- 2-Column Mode Cards Grid -->
-        <div class="home-top-actions">
-          <button class="home-icon-btn" data-nav="profile" aria-label="Profile">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/></svg>
-          </button>
-          <button class="home-icon-btn" data-nav="settings" aria-label="Settings">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
+      <section id="screen-home" class="app-screen active">
+        <!-- Floating Home Ambient Background -->
+        <div class="home-bg" aria-hidden="true">
+          <div class="cloud c1"></div>
+          <div class="cloud c2"></div>
+          <div class="cloud c3"></div>
+          <b class="star" style="left:12%;top:7%;color:#818CF8;animation-delay:-0.5s">✦</b>
+          <b class="star" style="left:82%;top:5%;color:#A78BFA;animation-delay:-1.2s">✦</b>
+          <b class="star" style="left:90%;top:28%;color:#38BDF8;animation-delay:-2.1s">✦</b>
+          <b class="star" style="left:6%;top:32%;color:#A78BFA;animation-delay:-0.7s">✦</b>
+          <b class="star" style="left:84%;top:50%;color:#818CF8;animation-delay:-1.8s">✦</b>
+          <b class="star" style="left:10%;top:56%;color:#34D399;animation-delay:-2.6s">✦</b>
+          <i class="bub" style="left:8%;width:14px;height:14px;animation-duration:11s;animation-delay:-0s"></i>
+          <i class="bub" style="left:24%;width:9px;height:9px;animation-duration:9s;animation-delay:-3s"></i>
+          <i class="bub" style="left:40%;width:18px;height:18px;animation-duration:13s;animation-delay:-6s"></i>
+          <i class="bub" style="left:62%;width:10px;height:10px;animation-duration:10s;animation-delay:-2s"></i>
+          <i class="bub" style="left:76%;width:15px;height:15px;animation-duration:12s;animation-delay:-8s"></i>
+          <i class="bub" style="left:88%;width:11px;height:11px;animation-duration:9s;animation-delay:-5s"></i>
+          <!-- Subtle Floating Directional Arrows in Background -->
+          <span class="bg-float-arrow fa1">➔</span>
+          <span class="bg-float-arrow fa2">➔</span>
+          <span class="bg-float-arrow fa3">➔</span>
         </div>
-        
-        <div class="home-bg">
-          <div class="cloud c1"></div><div class="cloud c2"></div><div class="cloud c3"></div>
-          <b class="star" style="left:10%;top:8%;color:#7DB5FF;animation-delay:-0s">✦</b><b class="star" style="left:84%;top:6%;color:#B79CFF;animation-delay:-1.2s">✦</b><b class="star" style="left:92%;top:30%;color:#5EEAD4;animation-delay:-2.1s">✦</b><b class="star" style="left:6%;top:34%;color:#B79CFF;animation-delay:-0.7s">✦</b><b class="star" style="left:78%;top:48%;color:#7DB5FF;animation-delay:-1.8s">✦</b><b class="star" style="left:14%;top:52%;color:#5EEAD4;animation-delay:-2.6s">✦</b><i class="bub" style="left:8%;width:14px;height:14px;animation-duration:11s;animation-delay:-0s"></i><i class="bub" style="left:22%;width:9px;height:9px;animation-duration:9s;animation-delay:-3s"></i><i class="bub" style="left:38%;width:18px;height:18px;animation-duration:13s;animation-delay:-6s"></i><i class="bub" style="left:55%;width:10px;height:10px;animation-duration:10s;animation-delay:-2s"></i><i class="bub" style="left:70%;width:15px;height:15px;animation-duration:12s;animation-delay:-8s"></i><i class="bub" style="left:86%;width:11px;height:11px;animation-duration:9s;animation-delay:-5s"></i><i class="bub" style="left:48%;width:8px;height:8px;animation-duration:8s;animation-delay:-1s"></i><i class="bub" style="left:93%;width:16px;height:16px;animation-duration:14s;animation-delay:-9s"></i>
+
+        <!-- Top Navigation Bar -->
+        <div class="home-top-nav">
+          <button class="home-pill-badge" data-nav="profile" aria-label="Profile">
+            <span class="home-avatar-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/>
+              </svg>
+            </span>
+            <span id="home-player-name" class="home-badge-text">Player</span>
+          </button>
+
+          <div class="home-top-right">
+            <div class="home-streak-pill" data-nav="daily" title="Daily streak">
+              <span class="streak-flame">🔥</span>
+              <span id="home-streak-count">0</span>
+            </div>
+            <button class="home-icon-btn" data-nav="settings" aria-label="Settings">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="home-hero">
+
+        <!-- Hero Branding with Animated Compass Emblem -->
+        <div class="home-hero-section">
+          <!-- Animated Interactive Arrow Emblem -->
+          <div class="hero-emblem-wrap" id="hero-interactive-emblem" title="Tap me!">
+            <div class="emblem-pulse-ring"></div>
+            <div class="emblem-orbit">
+              <svg class="emblem-svg" viewBox="0 0 120 120" fill="none">
+                <circle cx="60" cy="60" r="48" stroke="url(#emblemGrad)" stroke-width="2.5" stroke-dasharray="8 6" opacity="0.6"/>
+                <defs>
+                  <linearGradient id="emblemGrad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#6366F1"/>
+                    <stop offset="0.5" stop-color="#8B5CF6"/>
+                    <stop offset="1" stop-color="#38BDF8"/>
+                  </linearGradient>
+                </defs>
+                <!-- Central Diamond Core -->
+                <rect x="52" y="52" width="16" height="16" rx="4" transform="rotate(45 60 60)" fill="#6366F1" />
+                <!-- 4 Cardinal Arrows gliding outward -->
+                <g class="arrow-up"><path d="M60 42V20M54 26l6-6 6 6" stroke="#4F46E5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="arrow-right"><path d="M78 60h22M94 54l6 6-6 6" stroke="#8B5CF6" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="arrow-down"><path d="M60 78v22M54 94l6 6 6-6" stroke="#4F46E5" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+                <g class="arrow-left"><path d="M42 60H20M26 54l-6 6 6 6" stroke="#38BDF8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+              </svg>
+            </div>
+          </div>
+
           <h1 class="home-logo">ARROUT</h1>
-          
+          <div class="home-tagline">THINK • AIM • ESCAPE</div>
+
+          <!-- Glassmorphic Quote & Daily Tip Pill -->
+          <div class="home-quote-pill" id="home-quote-container">
+            <span class="quote-sparkle">✨</span>
+            <span class="quote-text" id="home-quote">Every arrow has a way out. Find it!</span>
+          </div>
         </div>
-<div class="play-fixed play-holder">
-<div class="mode-grid-card card-play" data-nav="puzzle">
-            <div class="card-top-content">
-              <div class="card-3d-icon">
-                <svg width="44" height="44" viewBox="0 0 54 54" fill="none"><circle cx="27" cy="27" r="22" fill="#6C8CFF"/><path d="M22 17 L38 27 L22 37 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/></svg>
-              </div>
-              <div class="card-title-col">
-                <div class="card-heading">PLAY</div>
-                <div id="home-level-text" class="play-level-text">Level 1</div>
-              </div>
-            </div>
-</div>
-<div class="dol-group">
-<div class="quote-bubble" id="home-quote">Can you solve this puzzle?</div>
-</div>
-</div>
-<div class="carousel-wrap">
-<div class="modes-grid-container">
-          <!-- Card 1: Battle vs computer opponent -->
-          <div class="mode-grid-card card-pvp" data-nav="1v1">
-            <div class="card-top-content">
-              <div class="card-3d-icon">
-                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
-                  <g transform="rotate(-45 27 27)">
-                    <rect x="24" y="6" width="6" height="34" rx="3" fill="#818CF8" />
-                    <rect x="25" y="6" width="4" height="34" rx="2" fill="#C7D2FE" />
-                    <rect x="18" y="32" width="18" height="5" rx="2" fill="#1E293B" />
-                    <circle cx="27" cy="42" r="3.5" fill="#FBBF24" />
-                  </g>
-                  <g transform="rotate(45 27 27)">
-                    <rect x="24" y="6" width="6" height="34" rx="3" fill="#6366F1" />
-                    <rect x="25" y="6" width="4" height="34" rx="2" fill="#A5B4FC" />
-                    <rect x="18" y="32" width="18" height="5" rx="2" fill="#1E293B" />
-                    <circle cx="27" cy="42" r="3.5" fill="#FBBF24" />
-                  </g>
-                </svg>
-              </div>
-              <div class="card-title-col">
-                <div class="card-heading">Battle</div>
-              </div>
-            </div>
-            <div class="card-bottom-row">
-              <div class="card-desc-text">Race a computer rival</div>
-              <div class="card-arrow-circle">→</div>
-            </div>
-          </div>
 
-          <!-- Card: Play with friends in a room -->
-          <div class="mode-grid-card card-room" data-nav="room">
-            <div class="card-top-content">
-              <div class="card-3d-icon">
-                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
-                  <circle cx="19" cy="20" r="7" fill="#34B38A"/><path d="M6 42c0-7.5 5.8-12 13-12s13 4.5 13 12v2H6v-2z" fill="#34B38A"/>
-                  <circle cx="37" cy="19" r="6" fill="#7BD9B3"/><path d="M27 43c0-6.2 4.7-10 10-10s10 3.8 10 10v1H27v-1z" fill="#7BD9B3"/>
+        <!-- Hero Play Action Card (Primary CTA) -->
+        <div class="home-cta-wrap">
+          <div class="hero-play-card card-play" data-nav="puzzle" role="button" tabindex="0" aria-label="Play Level">
+            <div class="play-card-glow"></div>
+            <div class="play-card-inner">
+              <div class="play-icon-bubble">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFFFFF">
+                  <path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l11-6.86a1 1 0 0 0 0-1.68l-11-6.86A1 1 0 0 0 8 5.14z"/>
                 </svg>
               </div>
-              <div class="card-title-col">
-                <div class="card-heading">Play with Friends</div>
+              <div class="play-text-col">
+                <span class="play-action-label">CONTINUE PUZZLE</span>
+                <span id="home-level-text" class="play-level-highlight">Level 1</span>
+              </div>
+              <div class="play-arrow-chevron">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
-            <div class="card-bottom-row">
-              <div class="card-desc-text">Create or join a room</div>
-              <div class="card-arrow-circle">→</div>
-            </div>
           </div>
+        </div>
 
-          <!-- Card 2: Daily Challenge -->
-          <div class="mode-grid-card card-daily" data-nav="daily">
-            <div class="card-top-content">
-              <div class="card-3d-icon">
-                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
-                  <rect x="9" y="12" width="36" height="34" rx="10" fill="#34D399" />
-                  <rect x="9" y="18" width="36" height="28" rx="8" fill="#FFFFFF" />
-                  <rect x="17" y="8" width="4" height="8" rx="2" fill="#059669" />
-                  <rect x="33" y="8" width="4" height="8" rx="2" fill="#059669" />
-                  <path d="M27 24L29 29.5H35L30.2 33L32 38.5L27 35L22 38.5L23.8 33L19 29.5H25L27 24Z" fill="#10B981" />
+        <!-- Game Modes Grid Section -->
+        <div class="home-modes-section">
+          <div class="home-section-title">GAME MODES</div>
+          
+          <div class="home-modes-grid">
+            <!-- 1. All Levels (1000 Campaign Puzzles) -->
+            <div class="mode-clay-card card-levels" data-nav="levels" role="button" tabindex="0">
+              <div class="mode-icon-circle bg-sky">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                  <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                  <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+                  <rect x="3" y="14" width="7" height="7" rx="2"></rect>
                 </svg>
               </div>
-              <div class="card-title-col">
-                <div class="card-heading">Daily Challenge</div>
+              <div class="mode-meta">
+                <div class="mode-title">Levels</div>
+                <div class="mode-sub">1000 Puzzles</div>
               </div>
+              <div id="home-cleared-count" class="mode-badge badge-sky">0/1000</div>
             </div>
-            <div class="card-bottom-row">
-              <div class="card-desc-text">New puzzle every day</div>
-              <div class="card-arrow-circle">→</div>
-            </div>
-          </div>
 
-          <!-- Card 3: Weekly Tournament -->
-          <div class="mode-grid-card card-tournament" data-nav="tournament">
-            <div class="card-top-content">
-              <div class="card-3d-icon">
-                <svg width="44" height="44" viewBox="0 0 54 54" fill="none">
-                  <path d="M17 14H37V26C37 31.5 32.5 36 27 36C21.5 36 17 31.5 17 26V14Z" fill="#FBBF24" />
-                  <path d="M17 18H11C9 18 9 26 13 28L17 28" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
-                  <path d="M37 18H43C45 18 45 26 41 28L37 28" stroke="#F59E0B" stroke-width="3" stroke-linecap="round"/>
-                  <rect x="24" y="36" width="6" height="6" fill="#D97706" />
-                  <rect x="18" y="42" width="18" height="4" rx="2" fill="#78350F" />
-                  <polygon points="27,20 28.5,23.5 32,23.5 29,25.5 30.5,29 27,27 23.5,29 25,25.5 22,23.5 25.5,23.5" fill="#FEF3C7"/>
+            <!-- 2. Daily Challenge -->
+            <div class="mode-clay-card card-daily" data-nav="daily" role="button" tabindex="0">
+              <div class="mode-icon-circle bg-emerald">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="4" stroke="#059669"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                  <circle cx="12" cy="15" r="2" fill="#059669"></circle>
                 </svg>
               </div>
-              <div class="card-title-col">
-                <div class="card-heading">Weekly Tournament</div>
+              <div class="mode-meta">
+                <div class="mode-title">Daily</div>
+                <div class="mode-sub">Fresh Puzzle</div>
               </div>
+              <div class="mode-badge badge-emerald">Streak 🔥</div>
             </div>
-            <div class="card-bottom-row">
-              <div class="card-desc-text">Compete & win</div>
-              <div class="card-arrow-circle">→</div>
+
+            <!-- 3. Battle vs Computer AI -->
+            <div class="mode-clay-card card-pvp" data-nav="1v1" role="button" tabindex="0">
+              <div class="mode-icon-circle bg-indigo">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M14.5 17.5L3 6V3h3l11.5 11.5" stroke="#4F46E5" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M13 19l6 2 2-6-2-1-3 3-3 2z" fill="#818CF8"/>
+                  <path d="M9.5 6.5L18 15" stroke="#4F46E5" stroke-width="2.2" stroke-linecap="round"/>
+                  <path d="M6 3L3 6" stroke="#4F46E5" stroke-width="2.2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="mode-meta">
+                <div class="mode-title">Battle</div>
+                <div class="mode-sub">Race AI Rival</div>
+              </div>
+              <div class="mode-badge badge-indigo">Duel ⚔️</div>
+            </div>
+
+            <!-- 4. Play with Friends (Room) -->
+            <div class="mode-clay-card card-room" data-nav="room" role="button" tabindex="0">
+              <div class="mode-icon-circle bg-teal">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <div class="mode-meta">
+                <div class="mode-title">Friends</div>
+                <div class="mode-sub">Room Race</div>
+              </div>
+              <div class="mode-badge badge-teal">Party 👥</div>
+            </div>
+
+            <!-- 5. Weekly Tournament Banner (Span 2) -->
+            <div class="mode-clay-card card-tournament card-tourney-banner" data-nav="tournament" role="button" tabindex="0">
+              <div class="tourney-banner-left">
+                <div class="mode-icon-circle bg-amber">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"></path>
+                    <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"></path>
+                    <path d="M6 3h12v7a6 6 0 0 1-12 0V3z"></path>
+                    <path d="M9 21h6"></path>
+                    <path d="M12 16v5"></path>
+                  </svg>
+                </div>
+                <div class="mode-meta">
+                  <div class="mode-title">Weekly Tournament</div>
+                  <div class="mode-sub">Championship Cup • Compete & Win</div>
+                </div>
+              </div>
+              <div class="mode-badge badge-amber">Cup 🏆</div>
             </div>
           </div>
-</div>
-</div>
-<div class="home-dots"><i class="on"></i><i></i><i></i><i></i></div></section>
+        </div>
+      </section>
       <!-- ================= LEVEL GAMEPLAY SCREEN (EXACT MATCH TO SCREENSHOT 2) ================= -->
       <section id="screen-puzzle" class="app-screen">
         
@@ -266,10 +332,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px;">
-            <div class="coin-pill" style="padding: 4px 10px; font-size: 0.85rem;">
-              <div class="coin-icon-gold" style="width: 16px; height: 16px; font-size: 0.55rem;">★</div>
-              <span class="user-coin-count">2450</span>
-            </div>
             <button class="btn-circle-action" aria-label="Settings" data-nav="settings" style="width: 36px; height: 36px;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -370,7 +432,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <div id="matchmaking-radar" class="radar-spinner-soft"></div>
           <h3 id="matchmaking-status-text" style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--text-navy); margin-bottom: 8px;">Ready to Duel</h3>
           <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;">
-            Race a computer-controlled rival on the same puzzle. Each side pays a 50-coin entry fee and the first to clear every arrow takes the pot. Up to 5 paid battles a day, then you can keep playing for fun.
+            Race a computer-controlled rival on the same puzzle. The first to clear every arrow wins the duel. Test your speed and climb the MMR ranks!
           </p>
 
           <button id="btn-start-matchmaking" class="btn-primary-clay">FIND OPPONENT</button>
@@ -520,7 +582,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <h2 id="daily-challenge-date" style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-navy); margin-bottom: 8px;">2026-10-15</h2>
           <div id="daily-info" class="daily-info"></div>
           <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; margin-bottom: 16px;">
-            Every day brings a unique deterministic puzzle! Solve today's challenge to earn 50 bonus coins and build your streak.
+            Every day brings a unique deterministic puzzle! Solve today's challenge to build and maintain your streak.
           </p>
           <div style="margin-bottom: 20px; font-weight: 800; color: #059669;">
             🔥 Current Streak: <span id="daily-streak-count">0</span> Days
@@ -572,7 +634,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <div style="margin-bottom: 24px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.5;">
             <b>About ARROUT:</b><br>
             Version 2.1.0<br>
-            Your progress, coins and best times are stored on this device only.
+            Your progress and best times are stored on this device only.
           </div>
 
           <button id="btn-reset-data" style="width: 100%; background: #FEE2E2; border: 1px solid #FECACA; color: #DC2626; padding: 12px; border-radius: 16px; font-weight: 800; cursor: pointer;">
@@ -602,10 +664,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
             <div style="font-size: 0.72rem; color: var(--text-muted);">MOVES</div>
             <div id="victory-stat-moves" style="font-weight: 800; font-size: 1.1rem; color: var(--text-navy);">0</div>
           </div>
-          <div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">REWARD</div>
-            <div id="victory-stat-coins" style="font-weight: 800; font-size: 1.1rem; color: var(--accent-gold);">+10 Coins</div>
-          </div>
         </div>
         <button id="btn-victory-next" class="btn-primary-clay">CONTINUE</button>
       </div>
@@ -621,10 +679,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
             <div style="font-size: 0.72rem; color: var(--text-muted);">RATING</div>
             <div id="pvp-rating-change" style="font-weight: 800; font-size: 1rem; color: #10B981;">+32 MMR</div>
           </div>
-          <div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">REWARD</div>
-            <div id="pvp-coins-earned" style="font-weight: 800; font-size: 1rem; color: var(--accent-gold);">+30 Coins</div>
-          </div>
         </div>
         <div style="display: flex; gap: 10px;">
           <button id="btn-pvp-rematch" class="btn-primary-clay">PLAY AGAIN</button>
@@ -635,8 +689,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 
     <!-- Confetti Particle Container -->
     <div id="confetti-canvas-wrapper" style="position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 105;"></div>
-
-    
 
   </div>
 
@@ -654,7 +706,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 <script src="js/rooms.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/modes.js"></script>
-<script src="js/coins.js"></script>
 <script src="js/themes.js"></script>
 <script>
 /* ===== ARROUT first-launch tutorial (shows once, replay from Settings > How to play) ===== */

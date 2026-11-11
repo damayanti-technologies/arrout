@@ -123,11 +123,11 @@
     if ($('matchmaking-actions')) $('matchmaking-actions').style.display = 'block';
 
     // Firebase live matchmaking queue check
-    var hasFb = typeof firebase !== 'undefined' && firebase.firestore && firebase.apps.length;
-    var myUid = (firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid) ||
+    var hasFb = typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length;
+    var myUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid) ||
                 (window.storageManager && window.storageManager.data && window.storageManager.data.playerId) ||
                 ('anon_' + Math.random().toString(36).slice(2, 8));
-    var myName = (firebase.auth && firebase.auth().currentUser && (firebase.auth().currentUser.displayName || firebase.auth().currentUser.email)) ||
+    var myName = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && (firebase.auth().currentUser.displayName || firebase.auth().currentUser.email)) ||
                  (window.storageManager && window.storageManager.data && window.storageManager.data.username) || 'Player';
 
     if (hasFb) {
