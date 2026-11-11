@@ -30,8 +30,8 @@ class TournamentManager {
     return {
       weekId,
       level: this.getWeeklyLevel(weekId),
-      qualifyingCount,
-      isEligible: qualifyingCount >= 10,
+      qualifyingCount: 0,
+      isEligible: true,
       timeRemaining,
       score: sm.data.tournamentScore
     };

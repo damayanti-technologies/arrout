@@ -16,7 +16,7 @@ const DEFAULT_ACHIEVEMENTS = [
   { id: 'speed_demon', name: 'Speed Demon', desc: 'Clear any puzzle in under 15 seconds.', unlocked: false },
   { id: 'pvp_first_win', name: 'First Blood', desc: 'Win your first Battle.', unlocked: false },
   { id: 'pvp_champion', name: 'Duelist Veteran', desc: 'Win 10 Battles.', unlocked: false },
-  { id: 'tournament_qualifier', name: 'Contender', desc: 'Qualify for the Weekly Tournament by clearing 10 different levels in a week.', unlocked: false }
+  { id: 'tournament_qualifier', name: 'Contender', desc: 'Compete in the Weekly Tournament.', unlocked: false }
 ];
 
 class StorageManager {
@@ -163,6 +163,7 @@ class StorageManager {
     const prev = this.data.tournamentScore;
     const best = prev && prev.timeSec <= timeSec ? prev.timeSec : timeSec;
     this.data.tournamentScore = { weekId: this.data.tournamentWeekId, timeSec: best, lastSec: timeSec, runs: ((prev && prev.runs) || 0) + 1 };
+    this.unlockAchievement('tournament_qualifier');
     this.save();
     return this.data.tournamentScore;
   }

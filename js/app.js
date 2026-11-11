@@ -546,22 +546,16 @@ class ArroutApp {
     if (timeEl) timeEl.textContent = info.timeRemaining;
 
     const countEl = document.getElementById('tournament-eligibility-count');
-    if (countEl) countEl.textContent = `${Math.min(info.qualifyingCount, 10)} / 10 Levels`;
+    if (countEl) countEl.style.display = 'none';
     const fill = document.getElementById('tournament-eligibility-fill');
-    if (fill) fill.style.width = `${Math.min(100, info.qualifyingCount * 10)}%`;
+    if (fill && fill.parentElement) fill.parentElement.style.display = 'none';
     const msg = document.getElementById('tournament-locked-msg');
-    if (msg) {
-      msg.style.color = info.isEligible ? '#059669' : '#E53E3E';
-      msg.textContent = info.isEligible
-        ? `Unlocked! This week's puzzle is Level ${info.level}.`
-        : `Clear ${10 - info.qualifyingCount} more different level(s) this week to unlock your entry.`;
-    }
+    if (msg) msg.style.display = 'none';
 
     const btn = document.getElementById('btn-enter-tournament');
     if (btn) {
-      btn.disabled = !info.isEligible;
+      btn.disabled = false;
       btn.onclick = () => {
-        if (!tm.getWeeklyInfo().isEligible) return;
         this._tourney = { level: info.level };
         this.navigate('puzzle', info.level);
       };
