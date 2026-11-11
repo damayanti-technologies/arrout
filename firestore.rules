@@ -172,7 +172,7 @@ service cloud.firestore {
 
     // Domain validator for /users/{userId} document
     function isValidUserDoc(data, userId) {
-      return hasRequiredFields(['userId', 'coins']) &&
+      return hasRequiredFields(['userId']) &&
         hasOnlyAllowedFields([
           'userId', 'coins', 'profile', 'stats', 'completedLevels',
           'achievements', 'themes', 'settings', 'playerId', 'username',
@@ -182,9 +182,7 @@ service cloud.firestore {
         data.userId is string &&
         data.userId == userId &&
         data.userId == request.auth.uid &&
-        data.coins is number &&
-        data.coins >= 0 &&
-        data.coins <= 1000000000 &&
+        isValidOptionalNumber(data, 'coins', 0, 1000000000) &&
         (!('profile' in data) || isValidProfile(data.profile)) &&
         (!('stats' in data) || isValidStats(data.stats)) &&
         (!('completedLevels' in data) || (data.completedLevels is map && data.completedLevels.size() <= 2000)) &&
@@ -243,24 +241,40 @@ service cloud.firestore {
       allow write: if false;
 
       match /scores/{userId} {
-        // Anyone can view the tournament leaderboard
+        // Anyone can view the live tournament leaderboard
         allow read: if true;
 
-        // Create score entry: must have valid timeSec within range and allowed leaderboard fields
-        allow create: if request.resource.data.timeSec is number &&
-                         request.resource.data.timeSec > 0 &&
-                         request.resource.data.timeSec < 86400 &&
+        // Create score entry: player must be signed in with Google (auth.uid == userId),
+        // points must be non-negative number, and document must contain only valid leaderboard fields
+        allow create: if isAuthenticated() &&
+                         request.auth.uid == userId &&
+                         request.resource.data.uid == userId &&
+                         request.resource.data.points is number &&
+                         request.resource.data.points >= 0 &&
+                         request.resource.data.points <= 100000 &&
                          request.resource.data.keys().hasOnly([
-                           'uid', 'username', 'photoURL', 'timeSec', 'runs', 'createdAt', 'updatedAt'
-                         ]);
+                           'uid', 'username', 'photoURL', 'points', 'levelsCompleted', 'timeSec', 'runs', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidOptionalString(request.resource.data, 'username', 1, 100) &&
+                         isValidOptionalString(request.resource.data, 'photoURL', 0, 1000) &&
+                         isValidOptionalNumber(request.resource.data, 'levelsCompleted', 0, 100000);
 
-        // Update score entry: must have valid timeSec within range and allowed leaderboard fields
-        allow update: if request.resource.data.timeSec is number &&
-                         request.resource.data.timeSec > 0 &&
-                         request.resource.data.timeSec < 86400 &&
+        // Update score entry: player must be signed in owner, points cannot be decreased arbitrarily,
+        // and immutable fields cannot be changed
+        allow update: if isAuthenticated() &&
+                         request.auth.uid == userId &&
+                         request.resource.data.uid == userId &&
+                         request.resource.data.points is number &&
+                         request.resource.data.points >= 0 &&
+                         request.resource.data.points <= 100000 &&
                          request.resource.data.keys().hasOnly([
-                           'uid', 'username', 'photoURL', 'timeSec', 'runs', 'createdAt', 'updatedAt'
-                         ]);
+                           'uid', 'username', 'photoURL', 'points', 'levelsCompleted', 'timeSec', 'runs', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidOptionalString(request.resource.data, 'username', 1, 100) &&
+                         isValidOptionalString(request.resource.data, 'photoURL', 0, 1000) &&
+                         isValidOptionalNumber(request.resource.data, 'levelsCompleted', 0, 100000) &&
+                         areImmutableFieldsUnchanged(['uid']) &&
+                         isCreatedAtPreserved();
 
         // Leaderboard scores cannot be arbitrarily deleted by clients
         allow delete: if false;

@@ -4,7 +4,7 @@
       "$userId": {
         ".read": "auth != null && auth.uid === $userId",
         ".write": "auth != null && auth.uid === $userId",
-        ".validate": "newData.hasChildren(['userId', 'coins']) && newData.child('userId').val() === $userId"
+        ".validate": "newData.hasChildren(['userId']) && newData.child('userId').val() === $userId"
       }
     },
     "rooms": {
@@ -16,10 +16,13 @@
     },
     "tournaments": {
       "$weekId": {
+        ".read": true,
         "scores": {
           ".read": true,
+          ".indexOn": ["points", "updatedAt"],
           "$userId": {
-            ".write": "newData.hasChildren(['timeSec']) && newData.child('timeSec').isNumber() && newData.child('timeSec').val() > 0 && newData.child('timeSec').val() < 86400"
+            ".write": "auth != null && auth.uid === $userId",
+            ".validate": "newData.hasChildren(['uid', 'points']) && newData.child('uid').val() === $userId && newData.child('points').isNumber() && newData.child('points').val() >= 0"
           }
         }
       }
