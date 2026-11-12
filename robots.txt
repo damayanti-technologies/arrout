@@ -1,0 +1,22 @@
+# Robots.txt for ARROUT
+# https://arrout.damayanticrest.online/
+
+User-agent: *
+Allow: /
+
+# Disallow internal scratch or hidden files if any
+Disallow: /scratch/
+Disallow: /.*
+
+# Allow core pages explicitly
+Allow: /
+Allow: /privacy-policy/
+Allow: /delete-account/
+Allow: /sitemap.xml
+Allow: /manifest.json
+Allow: /assets/
+Allow: /css/
+Allow: /js/
+
+# Sitemaps
+Sitemap: https://arrout.damayanticrest.online/sitemap.xml
