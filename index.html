@@ -329,7 +329,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
               </div>
               <div class="mode-meta">
                 <div class="mode-title">Battle</div>
-                <div class="mode-sub">Race AI Rival</div>
+                <div class="mode-sub">Real-Time 1v1 • Live Duel</div>
               </div>
               <div class="mode-badge badge-indigo">Duel ⚔️</div>
             </div>
@@ -405,9 +405,9 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 
         <!-- 1v1 Opponent Live Progress (Only during 1v1 duels) -->
         <div id="pvp-live-hud" style="display: none; background: #FFF; padding: 10px 14px; border-radius: 16px; box-shadow: var(--clay-shadow); margin-bottom: 10px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 700; margin-bottom: 4px;">
-            <span>Opponent: <b id="pvp-opp-name">Player</b></span>
-            <span id="pvp-opp-count">16 Left</span>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; font-weight: 700; margin-bottom: 4px;">
+            <span style="display: flex; align-items: center;">Opponent: <b id="pvp-opp-name" style="margin-left: 4px; display: inline-flex; align-items: center;">Player</b></span>
+            <span id="pvp-opp-count" style="font-variant-numeric: tabular-nums;">16 Left</span>
           </div>
           <div style="width: 100%; height: 6px; background: #F1F5F9; border-radius: 4px; overflow: hidden;">
             <div id="pvp-opp-progress-bar" style="width: 0%; height: 100%; background: #F43F5E; transition: width 0.3s;"></div>
@@ -469,9 +469,12 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 
         <div style="background: #FFF; border-radius: 28px; padding: 32px 24px; text-align: center; box-shadow: var(--clay-shadow); display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
           <div id="matchmaking-radar" class="radar-spinner-soft"></div>
-          <h3 id="matchmaking-status-text" style="font-family: var(--font-serif); font-size: 1.4rem; color: var(--text-navy); margin-bottom: 8px;">Ready to Duel</h3>
+          <div id="matchmaking-timer-badge" style="display: none; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 0.84rem; font-weight: 800; color: #4F46E5; background: #EEF2FF; padding: 5px 16px; border-radius: 20px; letter-spacing: 0.5px;">
+            SEARCHING: <span id="matchmaking-timer-sec" style="font-variant-numeric: tabular-nums;">15</span>s
+          </div>
+          <h3 id="matchmaking-status-text" style="font-family: var(--font-serif); font-size: 1.35rem; color: var(--text-navy); margin-bottom: 8px;">Ready to Duel</h3>
           <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 24px;">
-            Race a computer-controlled rival on the same puzzle. The first to clear every arrow wins the duel. Test your speed and climb the MMR ranks!
+            Duel real online players in real time on the same puzzle! The first to clear all arrows wins. If no player is found within 15 seconds, a bot rival steps in.
           </p>
 
           <button id="btn-start-matchmaking" class="btn-primary-clay">FIND OPPONENT</button>

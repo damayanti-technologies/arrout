@@ -109,111 +109,564 @@
     };
   }
 
-  /* ================= BATTLE (computer-controlled opponent) ================= */
+  /* ================= BATTLE (Real-Time 1v1 with Online Players & 15s Bot Fallback) ================= */
   var NAMES = ['Vortex_Pilot', 'NeonShadow', 'CyberArcher', 'NovaRider', 'PulseQueen', 'VectorKing', 'ZenithArrow', 'GlitchSniper', 'QuantumDash', 'AeroMaster', 'HyperSonic', 'SolarFlare'];
-  var B = { timers: [], opp: null, tick: null };
-  function bclear() { B.timers.forEach(clearTimeout); B.timers = []; if (B.tick) { clearInterval(B.tick); B.tick = null; } B.opp = null; }
-  function battleScreenName() { var s = $('btn-start-matchmaking'); var sec = s && s.closest('section'); return sec ? sec.id.replace('screen-', '') : 'home'; }
+  var B = {
+    timers: [],
+    countdownInterval: null,
+    scanInterval: null,
+    tick: null,
+    unsubs: [],
+    bcLobby: null,
+    bcRoom: null,
+    opp: null,
+    cur: null,
+    next: null,
+    cleanQueue: null,
+    broadcastSync: null,
+    searching: false
+  };
+
+  function bclear() {
+    B.timers.forEach(clearTimeout);
+    B.timers = [];
+    if (B.countdownInterval) {
+      clearInterval(B.countdownInterval);
+      B.countdownInterval = null;
+    }
+    if (B.scanInterval) {
+      clearInterval(B.scanInterval);
+      B.scanInterval = null;
+    }
+    if (B.tick) {
+      clearInterval(B.tick);
+      B.tick = null;
+    }
+    if (B.unsubs) {
+      B.unsubs.forEach(function (u) { try { if (typeof u === 'function') u(); } catch (e) {} });
+      B.unsubs = [];
+    }
+    if (B.bcLobby) {
+      try { B.bcLobby.close(); } catch (e) {}
+      B.bcLobby = null;
+    }
+    if (B.bcRoom) {
+      try { B.bcRoom.close(); } catch (e) {}
+      B.bcRoom = null;
+    }
+    if (B.cleanQueue) {
+      try { B.cleanQueue(); } catch (e) {}
+      B.cleanQueue = null;
+    }
+    B.broadcastSync = null;
+    B.searching = false;
+    B.opp = null;
+  }
+
+  function battleScreenName() {
+    var s = $('btn-start-matchmaking');
+    var sec = s && s.closest('section');
+    return sec ? sec.id.replace('screen-', '') : 'home';
+  }
+
+  function getBattlePlayer() {
+    var hasAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser;
+    var smData = (window.storageManager && window.storageManager.data) || {};
+    var uid = (hasAuth && firebase.auth().currentUser.uid) ||
+              smData.playerId ||
+              (function () {
+                var gen = 'p_' + Math.random().toString(36).slice(2, 10);
+                if (window.storageManager && window.storageManager.data) {
+                  window.storageManager.data.playerId = gen;
+                  try { window.storageManager.save(); } catch (e) {}
+                }
+                return gen;
+              })();
+    var name = (hasAuth && (firebase.auth().currentUser.displayName || firebase.auth().currentUser.email)) ||
+               smData.username ||
+               'Player';
+    return { uid: uid, name: name };
+  }
+
   function startBattle(app) {
     bclear();
-    var st = $('matchmaking-status-text'), radar = $('matchmaking-radar'), N = SETS.battle.get().length;
-    if (!N) { toast('Battle puzzles are missing.'); return; }
-    var name = NAMES[Math.floor(Math.random() * NAMES.length)], idx = Math.floor(Math.random() * N);
-    if (st) st.textContent = 'Searching for opponent...'; if (radar) radar.classList.add('searching');
-    if ($('matchmaking-actions')) $('matchmaking-actions').style.display = 'block';
+    B.next = null;
+    B.cur = null;
 
-    // Firebase live matchmaking queue check
+    var st = $('matchmaking-status-text');
+    var radar = $('matchmaking-radar');
+    var startBtn = $('btn-start-matchmaking');
+    var actBox = $('matchmaking-actions');
+    var timerBadge = $('matchmaking-timer-badge');
+    var timerSec = $('matchmaking-timer-sec');
+    var N = SETS.battle.get().length;
+
+    if (!N) {
+      toast('Battle puzzles are missing.');
+      return;
+    }
+
+    var myIdx = Math.floor(Math.random() * N);
+    var player = getBattlePlayer();
+    var myUid = player.uid;
+    var myName = player.name;
+
+    B.searching = true;
+    if (radar) radar.classList.add('searching');
+    if (startBtn) startBtn.style.display = 'none';
+    if (actBox) actBox.style.display = 'block';
+    if (timerBadge) {
+      timerBadge.style.display = 'inline-flex';
+      timerBadge.style.background = '#EEF2FF';
+      timerBadge.style.color = '#4F46E5';
+    }
+
+    var timeLeft = 15;
+    function updateTimerUI(sec) {
+      if (timerSec) timerSec.textContent = sec;
+      if (st) st.innerHTML = 'Searching online players... <b style="color:var(--primary); font-variant-numeric:tabular-nums;">' + sec + 's</b>';
+    }
+    updateTimerUI(timeLeft);
+
+    var matchResolved = false;
+
+    function onMatchFound(match) {
+      if (matchResolved) return;
+      matchResolved = true;
+      B.searching = false;
+
+      // Stop searching countdown and queue scanning
+      if (B.countdownInterval) { clearInterval(B.countdownInterval); B.countdownInterval = null; }
+      if (B.scanInterval) { clearInterval(B.scanInterval); B.scanInterval = null; }
+      if (B.cleanQueue) { try { B.cleanQueue(); } catch (e) {} B.cleanQueue = null; }
+      if (B.bcLobby) { try { B.bcLobby.close(); } catch (e) {} B.bcLobby = null; }
+
+      if (radar) radar.classList.remove('searching');
+      if (actBox) actBox.style.display = 'none';
+
+      if (timerBadge) {
+        if (match.isBot) {
+          timerBadge.style.background = '#F1F5F9';
+          timerBadge.style.color = '#64748B';
+          timerBadge.textContent = '🤖 BOT OPPONENT';
+        } else {
+          timerBadge.style.background = '#DCFCE7';
+          timerBadge.style.color = '#15803D';
+          timerBadge.textContent = '⚔️ OPPONENT FOUND!';
+        }
+      }
+
+      if (st) {
+        if (match.isBot) {
+          st.innerHTML = 'No online opponent found.<br><span style="font-size:0.92rem;color:var(--text-navy);">Challenging AI Rival: <b>' + esc(match.name) + '</b> 🤖</span>';
+        } else {
+          st.innerHTML = 'Opponent Found: <b style="color:var(--primary);">' + esc(match.name) + '</b>! ⚔️';
+        }
+      }
+
+      B.next = match;
+      B.timers.push(setTimeout(function () {
+        if (timerBadge) {
+          timerBadge.style.display = 'none';
+          timerBadge.style.background = '#EEF2FF';
+          timerBadge.style.color = '#4F46E5';
+          timerBadge.innerHTML = 'SEARCHING: <span id="matchmaking-timer-sec">15</span>s';
+        }
+        if (startBtn) startBtn.style.display = '';
+        app.navigate('puzzle', SETS.battle.base + match.puzzleIdx);
+      }, match.isBot ? 1100 : 900));
+    }
+
+    // 15-second countdown timer
+    B.countdownInterval = setInterval(function () {
+      timeLeft--;
+      if (timeLeft > 0) {
+        updateTimerUI(timeLeft);
+      } else {
+        // 15 seconds elapsed: fallback to AI bot rival!
+        clearInterval(B.countdownInterval);
+        B.countdownInterval = null;
+        var botName = NAMES[Math.floor(Math.random() * NAMES.length)];
+        onMatchFound({
+          name: botName,
+          uid: 'bot_' + Math.random().toString(36).slice(2, 8),
+          isBot: true,
+          puzzleIdx: myIdx
+        });
+      }
+    }, 1000);
+
+    // Transport 1: BroadcastChannel for instant local / multi-tab discovery
+    try {
+      var bc = new BroadcastChannel('arrout_battle_matchmaking');
+      B.bcLobby = bc;
+      bc.onmessage = function (e) {
+        var m = e.data;
+        if (!m || matchResolved) return;
+        if (m.type === 'QUEUE_JOIN' && m.uid !== myUid) {
+          if (myUid < m.uid) {
+            var mId = 'bm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+            bc.postMessage({
+              type: 'MATCH_ASSIGN',
+              targetUid: m.uid,
+              matchId: mId,
+              oppUid: myUid,
+              oppName: myName,
+              puzzleIdx: myIdx
+            });
+            onMatchFound({
+              matchId: mId,
+              name: m.name,
+              uid: m.uid,
+              puzzleIdx: myIdx,
+              isBot: false,
+              isHost: true
+            });
+          }
+        } else if (m.type === 'MATCH_ASSIGN' && m.targetUid === myUid) {
+          onMatchFound({
+            matchId: m.matchId,
+            name: m.oppName,
+            uid: m.oppUid,
+            puzzleIdx: m.puzzleIdx,
+            isBot: false,
+            isHost: false
+          });
+        }
+      };
+      bc.postMessage({ type: 'QUEUE_JOIN', uid: myUid, name: myName, puzzleIdx: myIdx, ts: Date.now() });
+    } catch (e) {}
+
+    // Transport 2: Firebase Firestore for real-time online matchmaking across devices
     var hasFb = typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length;
-    var myUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && firebase.auth().currentUser.uid) ||
-                (window.storageManager && window.storageManager.data && window.storageManager.data.playerId) ||
-                ('anon_' + Math.random().toString(36).slice(2, 8));
-    var myName = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && (firebase.auth().currentUser.displayName || firebase.auth().currentUser.email)) ||
-                 (window.storageManager && window.storageManager.data && window.storageManager.data.username) || 'Player';
-
     if (hasFb) {
-      if (st) st.textContent = 'Searching online queue...';
       try {
         var db = firebase.firestore();
-        var qDoc = db.collection('battles_queue').doc(myUid);
-        qDoc.set({
+        var myQueueRef = db.collection('battles_queue').doc(myUid);
+        var myPairRef = db.collection('rooms').doc('battle_pair_' + myUid);
+
+        var unsubPair = myPairRef.onSnapshot(function (snap) {
+          if (matchResolved || !snap.exists) return;
+          var d = snap.data();
+          if (d && d.matchId && d.opponentUid) {
+            myPairRef.delete().catch(function () {});
+            onMatchFound({
+              matchId: d.matchId,
+              name: d.opponentName || 'Online Rival',
+              uid: d.opponentUid,
+              puzzleIdx: (typeof d.puzzleIdx === 'number') ? d.puzzleIdx : myIdx,
+              isBot: false,
+              isHost: false
+            });
+          }
+        });
+        B.unsubs.push(unsubPair);
+
+        B.cleanQueue = function () {
+          try { myQueueRef.delete().catch(function () {}); } catch (e) {}
+          try { myPairRef.delete().catch(function () {}); } catch (e) {}
+        };
+
+        myQueueRef.set({
           uid: myUid,
           name: myName,
           joinedAt: Date.now(),
-          puzzleIdx: idx
-        }).catch(function() {});
-        B.cleanQueue = function() { qDoc.delete().catch(function() {}); };
-      } catch(e) {}
+          puzzleIdx: myIdx
+        }).catch(function (err) {
+          console.warn('[BattleQueue] set error:', err);
+        });
+
+        function scanQueue() {
+          if (matchResolved || !B.searching) return;
+          db.collection('battles_queue').get().then(function (snapshot) {
+            if (matchResolved || !B.searching) return;
+            var now = Date.now(), candidates = [];
+            snapshot.forEach(function (doc) {
+              var data = doc.data();
+              if (data && data.uid && data.uid !== myUid && (now - (data.joinedAt || 0) < 22000)) {
+                candidates.push(data);
+              }
+            });
+            if (candidates.length > 0) {
+              candidates.sort(function (a, b) { return (a.joinedAt || 0) - (b.joinedAt || 0); });
+              var opp = candidates[0];
+              var mId = 'bm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+              var sharedIdx = (typeof opp.puzzleIdx === 'number') ? opp.puzzleIdx : myIdx;
+
+              db.collection('rooms').doc('battle_pair_' + opp.uid).set({
+                matchId: mId,
+                opponentUid: myUid,
+                opponentName: myName,
+                puzzleIdx: sharedIdx,
+                createdAt: Date.now()
+              }).catch(function () {});
+
+              db.collection('rooms').doc(mId).set({
+                matchId: mId,
+                puzzleIdx: sharedIdx,
+                p1: { uid: opp.uid, name: opp.name },
+                p2: { uid: myUid, name: myName },
+                status: 'active',
+                createdAt: Date.now()
+              }).catch(function () {});
+
+              myQueueRef.delete().catch(function () {});
+
+              onMatchFound({
+                matchId: mId,
+                name: opp.name,
+                uid: opp.uid,
+                puzzleIdx: sharedIdx,
+                isBot: false,
+                isHost: true
+              });
+            }
+          }).catch(function (err) {
+            console.warn('[BattleQueue] scan error:', err);
+          });
+        }
+
+        scanQueue();
+        B.scanInterval = setInterval(scanQueue, 2200);
+      } catch (e) {
+        console.warn('[BattleQueue] init error:', e);
+      }
+    }
+  }
+
+  function cancelBattle() {
+    bclear();
+    B.next = null;
+    B.cur = null;
+    var st = $('matchmaking-status-text');
+    var radar = $('matchmaking-radar');
+    var startBtn = $('btn-start-matchmaking');
+    var actBox = $('matchmaking-actions');
+    var timerBadge = $('matchmaking-timer-badge');
+    if (st) st.textContent = 'Ready to Duel';
+    if (radar) radar.classList.remove('searching');
+    if (timerBadge) {
+      timerBadge.style.display = 'none';
+      timerBadge.style.background = '#EEF2FF';
+      timerBadge.style.color = '#4F46E5';
+      timerBadge.innerHTML = 'SEARCHING: <span id="matchmaking-timer-sec">15</span>s';
+    }
+    if (actBox) actBox.style.display = 'none';
+    if (startBtn) startBtn.style.display = '';
+  }
+
+  function hookBattle(app, eng, n) {
+    var opp = B.next || B.cur || { name: NAMES[0], isBot: true };
+    B.cur = opp;
+    B.next = null;
+
+    var isBot = opp.isBot !== false;
+    var total = eng.total;
+    var N = total;
+    var t0 = performance.now();
+    var player = getBattlePlayer();
+    var myUid = player.uid;
+    var myName = player.name;
+
+    B.opp = { name: opp.name, isBot: isBot, matchId: opp.matchId, myUid: myUid, done: false, over: false };
+
+    var hud = $('pvp-live-hud');
+    if (hud) hud.style.display = 'block';
+
+    if ($('pvp-opp-name')) {
+      $('pvp-opp-name').innerHTML = esc(opp.name) + (isBot
+        ? ' <span style="font-size:0.7rem;padding:2px 7px;border-radius:6px;background:#F1F5F9;color:#64748B;font-weight:800;letter-spacing:0.5px;margin-left:4px;">BOT</span>'
+        : ' <span style="font-size:0.7rem;padding:2px 7px;border-radius:6px;background:#DCFCE7;color:#15803D;font-weight:800;letter-spacing:0.5px;margin-left:4px;">🟢 LIVE</span>');
     }
 
-    B.timers.push(setTimeout(function () {
-      if (B.cleanQueue) { B.cleanQueue(); B.cleanQueue = null; }
-      if (st) st.textContent = 'Rival ready: ' + name; if (radar) radar.classList.remove('searching');
-      B.timers.push(setTimeout(function () {
-        B.cur = null; B.next = { name: name };
-        app.navigate('puzzle', SETS.battle.base + idx);
-      }, 900));
-    }, 2000 + Math.random() * 800));
-  }
-  function cancelBattle() {
-    if (B.cleanQueue) { B.cleanQueue(); B.cleanQueue = null; }
-    bclear(); B.next = null;
-    var st = $('matchmaking-status-text'), radar = $('matchmaking-radar');
-    if (st) st.textContent = 'Ready to Duel'; if (radar) radar.classList.remove('searching');
-  }
-  function hookBattle(app, eng, n) {
-    var opp = B.next || B.cur || { name: NAMES[0] }; B.cur = opp; B.next = null;   // the router can launch twice
-    var total = eng.total, N = total, T = N * (2.6 + Math.random() * 1.0) * 1000;   // opponent solve time (ms)
-    var t0 = performance.now(); B.opp = { name: opp.name, T: T, done: false, over: false };
-    var hud = $('pvp-live-hud'); if (hud) hud.style.display = 'block';
-    if ($('pvp-opp-name')) $('pvp-opp-name').textContent = opp.name;
     function paint(left) {
       if ($('pvp-opp-count')) $('pvp-opp-count').textContent = left + ' Left';
       if ($('pvp-opp-progress-bar')) $('pvp-opp-progress-bar').style.width = Math.round((1 - left / N) * 100) + '%';
     }
     paint(N);
-    var again = function () { bclear(); app.navigate(battleScreenName(), null, { replace: true }); };
+
+    var again = function () {
+      bclear();
+      app.navigate(battleScreenName(), null, { replace: true });
+    };
+
     function end(emoji, title, rows, winners, note, outcome) {
-      var b = B.opp; if (b) b.over = true;
+      var b = B.opp;
+      if (b) b.over = true;
       if (B.tick) { clearInterval(B.tick); B.tick = null; }
       eng.isLocked = true;
       app.showResultModal({ emoji: emoji, title: title, button: 'BACK TO BATTLE', nextAction: again });
       setExtra(boardHtml(rows, winners, note));
     }
-    B.tick = setInterval(function () {
-      var b = B.opp; if (!b || b.over) return;
-      var el = performance.now() - t0, f = Math.min(1, el / T); f = f * f * (3 - 2 * f) * .35 + f * .65;   // slightly slow start
-      var left = Math.max(0, N - Math.floor(N * f + (Math.random() < .3 ? 1 : 0)));
-      if (el >= T) {
-        paint(0); b.done = true; clearInterval(B.tick); B.tick = null;
-        // 0.5 s grace: finishing within it is a tie
-        B.timers.push(setTimeout(function () {
-          if (b.over) return;
-          var rows = [{ name: b.name, ms: T, me: false }, { name: window.storageManager.data.username || 'You', ms: null, me: true, failed: false }];
+
+    if (isBot) {
+      // ---------------- AI Bot Rival Simulation ----------------
+      var T = N * (2.6 + Math.random() * 1.0) * 1000;
+      B.opp.T = T;
+      B.tick = setInterval(function () {
+        var b = B.opp;
+        if (!b || b.over) return;
+        var el = performance.now() - t0, f = Math.min(1, el / T);
+        f = f * f * (3 - 2 * f) * 0.35 + f * 0.65;
+        var left = Math.max(0, N - Math.floor(N * f + (Math.random() < 0.3 ? 1 : 0)));
+        if (el >= T) {
+          paint(0);
+          b.done = true;
+          clearInterval(B.tick);
+          B.tick = null;
+          B.timers.push(setTimeout(function () {
+            if (b.over) return;
+            var rows = [
+              { name: b.name, ms: T, me: false },
+              { name: myName, ms: null, me: true, failed: false }
+            ];
+            try { window.storageManager.recordBattle(false); } catch (e) {}
+            end('😮', b.name + ' wins!', rows, [rows[0]], 'They cleared all arrows first.', 'lose');
+          }, 500));
+          return;
+        }
+        paint(left);
+      }, 600);
+
+      eng.onFail = function () {
+        var b = B.opp;
+        if (!b || b.over) return;
+        var rows = [
+          { name: b.name, ms: null, me: false },
+          { name: myName, ms: null, me: true, failed: true }
+        ];
+        try { window.storageManager.recordBattle(false); } catch (e) {}
+        end('😮', b.name + ' wins!', rows, [rows[0]], 'You ran out of lives.', 'lose');
+      };
+
+      eng.onComplete = function () {
+        var b = B.opp;
+        if (!b || b.over) return;
+        var my = Math.round(performance.now() - t0);
+        var rows = [
+          { name: myName, ms: my, me: true },
+          { name: b.name, ms: b.done ? T : null, me: false }
+        ];
+        if (b.done && my - T <= 500) {
+          rows.sort(function (x, y) { return x.ms - y.ms; });
+          end('🤝', "It's a tie!", rows, rows, 'Both finished within 0.5 seconds.', 'tie');
+        } else {
+          try { window.storageManager.recordBattle(true); } catch (e) {}
+          end('🏆', myName + ' wins!', rows, [rows[0]], 'You cleared all arrows first! Nice one!', 'win');
+        }
+      };
+    } else {
+      // ---------------- Real Online Player Live Duel ----------------
+      var roomBc = null;
+      try {
+        roomBc = new BroadcastChannel('arrout_battle_room_' + opp.matchId);
+        B.bcRoom = roomBc;
+      } catch (e) {}
+
+      var hasFb = typeof firebase !== 'undefined' && firebase.firestore && firebase.apps && firebase.apps.length;
+      var roomDoc = (hasFb && opp.matchId) ? firebase.firestore().collection('rooms').doc(opp.matchId) : null;
+
+      function syncProgress(data) {
+        var payload = Object.assign({ uid: myUid, ts: Date.now() }, data);
+        if (roomBc) {
+          try { roomBc.postMessage(payload); } catch (e) {}
+        }
+        if (roomDoc) {
+          var docUpdate = {};
+          docUpdate['m_' + myUid] = payload;
+          roomDoc.set(docUpdate, { merge: true }).catch(function () {});
+        }
+      }
+      B.broadcastSync = syncProgress;
+
+      // Initial state sync
+      syncProgress({ left: N, total: N, status: 'playing' });
+
+      function onOpponentData(data) {
+        var b = B.opp;
+        if (!b || b.over) return;
+        if (typeof data.left === 'number') {
+          paint(data.left);
+        }
+        if (data.status === 'win' || data.done) {
+          b.done = true;
+          paint(0);
+          var oppMs = data.timeMs || Math.round(performance.now() - t0);
+          var rows = [
+            { name: opp.name, ms: oppMs, me: false },
+            { name: myName, ms: null, me: true, failed: false }
+          ];
           try { window.storageManager.recordBattle(false); } catch (e) {}
-          end('😮', b.name + ' wins!', rows, [rows[0]], 'They solved it first.', 'lose');
-        }, 500));
-        return;
+          end('😮', opp.name + ' wins!', rows, [rows[0]], 'They cleared all arrows first.', 'lose');
+        } else if (data.status === 'fail' || data.failed) {
+          var rows = [
+            { name: myName, ms: Math.round(performance.now() - t0), me: true },
+            { name: opp.name, ms: null, me: false, failed: true }
+          ];
+          try { window.storageManager.recordBattle(true); } catch (e) {}
+          end('🏆', myName + ' wins!', rows, [rows[0]], opp.name + ' ran out of lives.', 'win');
+        } else if (data.status === 'forfeit') {
+          var rows = [
+            { name: myName, ms: Math.round(performance.now() - t0), me: true },
+            { name: opp.name, ms: null, me: false, failed: true }
+          ];
+          try { window.storageManager.recordBattle(true); } catch (e) {}
+          end('🏆', 'Victory!', rows, [rows[0]], opp.name + ' left the match.', 'win');
+        }
       }
-      paint(left);
-    }, 600);
-    eng.onFail = function () {
-      var b = B.opp; if (!b || b.over) return;
-      var rows = [{ name: b.name, ms: null, me: false }, { name: window.storageManager.data.username || 'You', ms: null, me: true, failed: true }];
-      try { window.storageManager.recordBattle(false); } catch (e) {}
-      end('', b.name + ' wins!', rows, [rows[0]], 'You ran out of lives.', 'lose');
-    };
-    eng.onComplete = function () {
-      var b = B.opp; if (!b || b.over) return;
-      var my = Math.round(performance.now() - t0), me = window.storageManager.data.username || 'You';
-      var rows = [{ name: me, ms: my, me: true }, { name: b.name, ms: b.done ? T : null, me: false }];
-      if (b.done && my - T <= 500) {                      // inside the tie window
-        rows.sort(function (x, y) { return x.ms - y.ms; });
-        end('🤝', "It's a tie!", rows, rows, 'Both finished within 0.5 seconds.', 'tie');
-      } else {
+
+      if (roomBc) {
+        roomBc.onmessage = function (e) {
+          var m = e.data;
+          if (m && m.uid !== myUid) onOpponentData(m);
+        };
+      }
+
+      if (roomDoc) {
+        var unsubRoom = roomDoc.onSnapshot(function (snap) {
+          if (!snap.exists) return;
+          var d = snap.data();
+          if (!d) return;
+          Object.keys(d).forEach(function (k) {
+            if (k.startsWith('m_') && k !== ('m_' + myUid)) {
+              onOpponentData(d[k]);
+            }
+          });
+        });
+        B.unsubs.push(unsubRoom);
+      }
+
+      var oc = eng.onCountChange;
+      eng.onCountChange = function (cnt) {
+        if (oc) oc(cnt);
+        syncProgress({ left: cnt, total: N, status: 'playing' });
+      };
+
+      eng.onFail = function () {
+        var b = B.opp;
+        if (!b || b.over) return;
+        syncProgress({ status: 'fail', failed: true });
+        var rows = [
+          { name: opp.name, ms: null, me: false },
+          { name: myName, ms: null, me: true, failed: true }
+        ];
+        try { window.storageManager.recordBattle(false); } catch (e) {}
+        end('😮', opp.name + ' wins!', rows, [rows[0]], 'You ran out of lives.', 'lose');
+      };
+
+      eng.onComplete = function () {
+        var b = B.opp;
+        if (!b || b.over) return;
+        var myMs = Math.round(performance.now() - t0);
+        syncProgress({ left: 0, status: 'win', done: true, timeMs: myMs });
+        var rows = [
+          { name: myName, ms: myMs, me: true },
+          { name: opp.name, ms: null, me: false }
+        ];
         try { window.storageManager.recordBattle(true); } catch (e) {}
-        end('🏆', me + ' wins!', rows, [rows[0]], 'You solved it first! Nice one!', 'win');
-      }
-    };
+        end('🏆', myName + ' wins!', rows, [rows[0]], 'You cleared all arrows first! Nice speed!', 'win');
+      };
+    }
   }
 
   /* ================= wiring ================= */
@@ -239,7 +692,6 @@
 
     var ol = app.launchBendingLevel.bind(app);
     app.launchBendingLevel = function (l, d) {
-      bclear();
       var m = modeOf(l);
       ol(l, d);
       var eng = app.bendingEngine, e = entry(l);
@@ -252,9 +704,15 @@
 
     var sw = app.switchScreen.bind(app);
     app.switchScreen = function (name, lvl, upd) {
+      if (name !== '1v1' && name !== 'puzzle' && B.searching) {
+        cancelBattle();
+      }
       if (name !== 'puzzle' && !app._holding) {
         if (B.opp && !B.opp.over) {
           try { window.storageManager.recordBattle(false); } catch (e) {}
+          if (!B.opp.isBot && B.broadcastSync) {
+            try { B.broadcastSync({ status: 'forfeit' }); } catch (e) {}
+          }
         }
         var pb = $('pvp-pot-badge'); if (pb) pb.style.display = 'none';
         B.cur = null; bclear();
