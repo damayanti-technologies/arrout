@@ -102,6 +102,7 @@
         });
 
         console.log('[FirebaseSync] Firebase initialized successfully.');
+        this.initGoogleOneTap();
       } catch (err) {
         console.error('[FirebaseSync] Initialization failed:', err);
         this.isConfigured = false;
@@ -309,13 +310,129 @@
       }
     },
 
+    initGoogleOneTap() {
+      const clientId = '803778725985-mtbnqk72udf06ebru580fo9r46jkaupf.apps.googleusercontent.com';
+
+      const setupGsi = () => {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          try {
+            google.accounts.id.initialize({
+              client_id: clientId,
+              callback: (response) => this.handleGoogleCredentialResponse(response),
+              auto_select: false,
+              cancel_on_tap_outside: true
+            });
+
+            // If not logged in yet, prompt Google One Tap in browser
+            if (!this.user) {
+              google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed()) {
+                  console.log('[GSI] One Tap not displayed:', notification.getNotDisplayedReason());
+                }
+              });
+            }
+          } catch (err) {
+            console.warn('[GSI] One Tap init notice:', err);
+          }
+        }
+      };
+
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        setupGsi();
+      } else {
+        window.addEventListener('load', () => setTimeout(setupGsi, 600));
+      }
+    },
+
+    async handleGoogleCredentialResponse(response) {
+      if (!response || !response.credential) return;
+      try {
+        const token = response.credential;
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        const payload = JSON.parse(jsonPayload);
+
+        console.log('[GSI] Google One Tap authenticated user:', payload.email);
+
+        let firebaseUser = null;
+        if (this.auth) {
+          try {
+            const credential = firebase.auth.GoogleAuthProvider.credential(token);
+            const userCred = await this.auth.signInWithCredential(credential);
+            firebaseUser = userCred.user;
+          } catch (e) {
+            console.warn('[GSI] signInWithCredential notice:', e);
+          }
+        }
+
+        const uid = (firebaseUser && firebaseUser.uid) ||
+                    (payload.sub ? 'g_' + payload.sub : null) ||
+                    ('g_' + btoa(payload.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20));
+
+        const authObj = {
+          uid: uid,
+          displayName: payload.name || payload.email.split('@')[0],
+          email: payload.email,
+          photoURL: payload.picture || ''
+        };
+
+        this.user = authObj;
+        authUser = authObj;
+
+        try {
+          localStorage.setItem('arrout_active_google_user', JSON.stringify(authObj));
+          this.saveGoogleAccount(authObj);
+        } catch (e) {}
+
+        this.closeGoogleSignInModal();
+        this.updateAuthUI(authObj);
+        await this.syncOnLogin(authObj);
+        this.listenToRealtimeCloudUpdates(authObj.uid);
+
+        if (this._authCallback) {
+          const cb = this._authCallback;
+          this._authCallback = null;
+          try { cb(authObj); } catch (e) {}
+        }
+
+        if (window.showToast) {
+          window.showToast('Signed in with Google as ' + (authObj.displayName || authObj.email));
+        }
+      } catch (err) {
+        console.error('[GSI] Error processing Google One Tap credential:', err);
+      }
+    },
+
     async selectGoogleAccount(account) {
       if (!account || !account.email) return;
 
-      const mockUid = account.uid || ('g_' + btoa(account.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20));
+      // Ensure Firebase Auth session exists so Firestore rules don't block
+      let firebaseUser = (this.auth && this.auth.currentUser) || null;
+      if (!firebaseUser && this.auth) {
+        try {
+          const anonCred = await this.auth.signInAnonymously();
+          firebaseUser = anonCred ? anonCred.user : null;
+        } catch (anonErr) {
+          console.warn('[FirebaseSync] Anonymous auth note:', anonErr && anonErr.message);
+        }
+      }
+
+      if (firebaseUser) {
+        try {
+          await firebaseUser.updateProfile({
+            displayName: account.name || account.email.split('@')[0]
+          });
+        } catch (e) {}
+      }
+
+      const uid = (firebaseUser && firebaseUser.uid) ||
+                  account.uid ||
+                  ('g_' + btoa(account.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20));
+
       const authObj = {
-        uid: mockUid,
-        displayName: account.name || account.email.split('@')[0],
+        uid: uid,
+        displayName: account.name || (firebaseUser && firebaseUser.displayName) || account.email.split('@')[0],
         email: account.email,
         photoURL: account.photoURL || ''
       };
@@ -423,6 +540,11 @@
         return;
       }
 
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        try {
+          google.accounts.id.prompt();
+        } catch (e) {}
+      }
       const provider = new firebase.auth.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
