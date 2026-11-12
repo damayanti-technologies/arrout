@@ -101,6 +101,18 @@
           this.handleAuthStateChange(user);
         });
 
+        // Handle redirect result if returning from a Google OAuth redirect
+        if (typeof this.auth.getRedirectResult === 'function') {
+          this.auth.getRedirectResult().then(result => {
+            if (result && result.user) {
+              console.log('[FirebaseSync] Google redirect sign-in successful:', result.user.email);
+              if (window.showToast) window.showToast('Signed in with Google as ' + (result.user.displayName || result.user.email));
+            }
+          }).catch(err => {
+            console.warn('[FirebaseSync] getRedirectResult notice:', err && err.message);
+          });
+        }
+
         console.log('[FirebaseSync] Firebase initialized successfully.');
         this.initGoogleOneTap();
       } catch (err) {
