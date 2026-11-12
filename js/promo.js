@@ -21,13 +21,18 @@
     }
   }
 
+  let promoShown = false;
+
   function showPromo() {
+    if (promoShown) return;
+    promoShown = true;
     const modal = document.getElementById('modal-app-promo');
     if (!modal) return;
     modal.classList.add('open');
   }
 
   function closePromo(e) {
+    promoShown = true;
     if (e) e.stopPropagation();
     const modal = document.getElementById('modal-app-promo');
     if (!modal) return;

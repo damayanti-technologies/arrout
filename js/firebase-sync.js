@@ -154,10 +154,15 @@
       } catch (e) {}
     },
 
+    removeSavedGoogleAccount(email) {
+      if (!email) return;
+      const list = this.getSavedGoogleAccounts().filter(a => a.email.toLowerCase() !== email.toLowerCase());
+      this.saveAccountsList(list);
+    },
+
     saveGoogleAccount(acc) {
       if (!acc || !acc.email) return;
-      if (acc.email.includes('reshwanth') || acc.email.includes('sannivesham')) return;
-      const list = this.getSavedGoogleAccounts();
+            const list = this.getSavedGoogleAccounts();
       const existingIdx = list.findIndex(a => a.email.toLowerCase() === acc.email.toLowerCase());
       if (existingIdx !== -1) {
         list[existingIdx] = { ...list[existingIdx], ...acc };
@@ -170,19 +175,8 @@
     openGoogleSignInModal(onSuccessCallback) {
       if (onSuccessCallback) this._authCallback = onSuccessCallback;
 
-      // 1. If in native Android app, directly trigger native system account sheet
-      if (window.AndroidBridge && typeof window.AndroidBridge.signInWithGoogle === 'function') {
-        this.signInWithGoogle(onSuccessCallback);
-        return;
-      }
-
-      // 2. If in browser and no accounts saved on this device yet, trigger Google OAuth popup
-      const accounts = this.getSavedGoogleAccounts();
       const modal = document.getElementById('modal-google-auth');
-      if (!modal || accounts.length === 0) {
-        this.signInWithGoogleOAuth();
-        return;
-      }
+      if (!modal) return;
 
       this.renderAccountsListUI();
 
@@ -207,8 +201,8 @@
       const accounts = this.getSavedGoogleAccounts();
       if (accounts.length === 0) {
         container.innerHTML = `
-          <div style="padding: 18px 12px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
-            No Google accounts connected yet.<br>Tap below to sign in with your Google account.
+          <div style="padding: 14px 8px; text-align: center; color: var(--text-muted); font-size: 0.83rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08); line-height: 1.4;">
+            Sign in with your Google account to sync progress and tournament ranks across your devices in real time.
           </div>
         `;
         return;
@@ -232,13 +226,22 @@
               <div class="google-account-name">${acc.name || acc.email.split('@')[0]}</div>
               <div class="google-account-email">${acc.email}</div>
             </div>
-            ${isActive ? '<div class="google-account-check">✓</div>' : ''}
+            ${isActive ? '<div class="google-account-check" title="Currently Active">✓</div>' : ''}
+            <button type="button" class="google-account-remove" data-remove-email="${acc.email}" title="Remove from this device" aria-label="Remove account">✕</button>
           </div>
         `;
       }).join('');
 
       container.querySelectorAll('.google-account-row').forEach(row => {
-        row.onclick = () => {
+        row.onclick = (e) => {
+          if (e.target && e.target.closest('.google-account-remove')) {
+            e.stopPropagation();
+            const removeBtn = e.target.closest('.google-account-remove');
+            const targetEmail = removeBtn.dataset.removeEmail;
+            this.removeSavedGoogleAccount(targetEmail);
+            this.renderAccountsListUI();
+            return;
+          }
           const email = row.dataset.email;
           const chosen = accounts.find(a => a.email.toLowerCase() === email.toLowerCase());
           if (chosen) {
@@ -251,6 +254,12 @@
     setupModalEventListeners() {
       if (this._modalEventsAttached) return;
       this._modalEventsAttached = true;
+      if (!this._escListenerAttached) {
+        this._escListenerAttached = true;
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') this.closeGoogleSignInModal();
+        });
+      }
 
       const modal = document.getElementById('modal-google-auth');
       const closeBtn = document.getElementById('btn-close-google-modal');
@@ -358,7 +367,6 @@
       if (onSuccessCallback) this._authCallback = onSuccessCallback;
 
       // 1. Android Native App: trigger Android's native Google Sign-In intent
-      // Displays the accounts logged in on the user's phone via Google Play Services
       if (window.AndroidBridge && typeof window.AndroidBridge.signInWithGoogle === 'function') {
         try {
           console.log('[FirebaseSync] Triggering Native Android Google Sign-In intent...');
@@ -369,8 +377,9 @@
         }
       }
 
-      // 2. Web Browser: trigger official Google OAuth popup
-      this.signInWithGoogleOAuth();
+      // 2. Web Browser: Always show the in-app bottom sheet Google account modal!
+      console.log('[FirebaseSync] Opening in-app Google Sign-In bottom sheet...');
+      this.openGoogleSignInModal(onSuccessCallback);
     },
 
     async onNativeGoogleSignInSuccess(data) {
