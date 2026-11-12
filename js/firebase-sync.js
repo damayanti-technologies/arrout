@@ -28,19 +28,7 @@
     _authCallback: null,
 
     init() {
-      // 1. Purge any stale developer emails previously cached in localStorage
-      try {
-        const active = localStorage.getItem('arrout_active_google_user');
-        if (active && (active.includes('reshwanth') || active.includes('sannivesham'))) {
-          localStorage.removeItem('arrout_active_google_user');
-        }
-        const savedAccs = localStorage.getItem('arrout_google_accounts');
-        if (savedAccs && (savedAccs.includes('reshwanth') || savedAccs.includes('sannivesham'))) {
-          localStorage.removeItem('arrout_google_accounts');
-        }
-      } catch (e) {}
-
-      // 2. Restore active Google user if previously logged in on this device
+      // 1. Restore active Google user if previously logged in on this device
       try {
         const saved = localStorage.getItem('arrout_active_google_user');
         if (saved) {
@@ -154,7 +142,7 @@
         if (raw) {
           const list = JSON.parse(raw);
           if (Array.isArray(list) && list.length > 0) {
-            return list.filter(a => a && a.email && !a.email.includes('reshwanth') && !a.email.includes('sannivesham'));
+            return list.filter(a => a && a.email && typeof a.email === 'string' && a.email.includes('@'));
           }
         }
       } catch (e) {}
@@ -295,15 +283,26 @@
           if (window.showToast) window.showToast('Please enter a valid Google email address.');
           return;
         }
-        const namePart = val.split('@')[0].replace(/[._-]/g, ' ');
-        const capName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-        const newAcc = {
-          name: capName,
-          email: val,
-          photoURL: ''
-        };
-        this.saveGoogleAccount(newAcc);
-        await this.selectGoogleAccount(newAcc);
+        if (confirmInputBtn) {
+          confirmInputBtn.disabled = true;
+          confirmInputBtn.textContent = 'Signing in...';
+        }
+        try {
+          const namePart = val.split('@')[0].replace(/[._-]/g, ' ');
+          const capName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+          const newAcc = {
+            name: capName,
+            email: val,
+            photoURL: ''
+          };
+          this.saveGoogleAccount(newAcc);
+          await this.selectGoogleAccount(newAcc);
+        } finally {
+          if (confirmInputBtn) {
+            confirmInputBtn.disabled = false;
+            confirmInputBtn.textContent = 'Sign In';
+          }
+        }
       };
 
       if (confirmInputBtn) confirmInputBtn.onclick = handleConfirmCustom;
@@ -418,35 +417,66 @@
 
     async selectGoogleAccount(account) {
       if (!account || !account.email) return;
+      const cleanEmail = account.email.trim().toLowerCase();
+      this.setSyncStatus('Connecting to Cloud...');
 
-      // Ensure Firebase Auth session exists so Firestore rules don't block
+      // Authenticate with Firebase using deterministic credentials for cross-device sync
       let firebaseUser = (this.auth && this.auth.currentUser) || null;
-      if (!firebaseUser && this.auth) {
-        try {
-          const anonCred = await this.auth.signInAnonymously();
-          firebaseUser = anonCred ? anonCred.user : null;
-        } catch (anonErr) {
-          console.warn('[FirebaseSync] Anonymous auth note:', anonErr && anonErr.message);
+
+      if (this.auth) {
+        const currentEmail = (firebaseUser && firebaseUser.email) ? firebaseUser.email.toLowerCase() : '';
+        if (!firebaseUser || currentEmail !== cleanEmail) {
+          const secret = 'Arrout#Sync_' + btoa(cleanEmail).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) + '_Secure99!';
+          try {
+            const userCred = await this.auth.signInWithEmailAndPassword(cleanEmail, secret);
+            firebaseUser = userCred.user;
+          } catch (loginErr) {
+            if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential' || loginErr.code === 'auth/wrong-password') {
+              try {
+                const regCred = await this.auth.createUserWithEmailAndPassword(cleanEmail, secret);
+                firebaseUser = regCred.user;
+              } catch (createErr) {
+                console.warn('[FirebaseSync] Email registration note:', createErr && createErr.message);
+                if (createErr && createErr.code === 'auth/email-already-in-use') {
+                  if (window.showToast) {
+                    window.showToast('Signing in with Google for ' + cleanEmail + '...');
+                  }
+                  this.signInWithGoogleOAuth(cleanEmail);
+                  return;
+                }
+              }
+            } else if (loginErr.code === 'auth/account-exists-with-different-credential') {
+              if (window.showToast) {
+                window.showToast('Please continue with Google for ' + cleanEmail);
+              }
+              this.signInWithGoogleOAuth(cleanEmail);
+              return;
+            } else {
+              console.warn('[FirebaseSync] Email auth note:', loginErr && loginErr.message);
+            }
+          }
         }
       }
 
       if (firebaseUser) {
         try {
-          await firebaseUser.updateProfile({
-            displayName: account.name || account.email.split('@')[0]
-          });
+          if (!firebaseUser.displayName && account.name) {
+            await firebaseUser.updateProfile({
+              displayName: account.name
+            });
+          }
         } catch (e) {}
       }
 
       const uid = (firebaseUser && firebaseUser.uid) ||
                   account.uid ||
-                  ('g_' + btoa(account.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20));
+                  ('u_' + cleanEmail.replace(/[^a-z0-9]/g, '_'));
 
       const authObj = {
         uid: uid,
-        displayName: account.name || (firebaseUser && firebaseUser.displayName) || account.email.split('@')[0],
-        email: account.email,
-        photoURL: account.photoURL || ''
+        displayName: account.name || (firebaseUser && firebaseUser.displayName) || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        photoURL: account.photoURL || (firebaseUser && firebaseUser.photoURL) || ''
       };
 
       this.user = authObj;
@@ -544,7 +574,7 @@
       }
     },
 
-    async signInWithGoogleOAuth() {
+    async signInWithGoogleOAuth(loginHint) {
       if (!this.auth) {
         if (window.showToast) window.showToast('Please enter your Google email below to sign in.');
         const input = document.getElementById('google-custom-email');
@@ -552,18 +582,25 @@
         return;
       }
 
-      if (window.google && window.google.accounts && window.google.accounts.id) {
-        try {
-          google.accounts.id.prompt();
-        } catch (e) {}
-      }
       const provider = new firebase.auth.GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
+      const customParams = { prompt: 'select_account' };
+      if (loginHint) customParams.login_hint = loginHint;
+      provider.setCustomParameters(customParams);
 
       try {
         const result = await this.auth.signInWithPopup(provider);
         if (result && result.user) {
           const u = result.user;
+          // Link email credential if available so both Google and email sign-in resolve to the same account
+          try {
+            if (u.email) {
+              const clean = u.email.toLowerCase().trim();
+              const secret = 'Arrout#Sync_' + btoa(clean).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) + '_Secure99!';
+              const emailCred = firebase.auth.EmailAuthProvider.credential(clean, secret);
+              await u.linkWithCredential(emailCred).catch(() => {});
+            }
+          } catch (linkErr) {}
+
           const acc = {
             name: u.displayName || (u.email ? u.email.split('@')[0] : 'Google Pilot'),
             email: u.email,
@@ -606,6 +643,7 @@
         }
         const input = document.getElementById('google-custom-email');
         if (input) {
+          if (loginHint) input.value = loginHint;
           input.scrollIntoView({ behavior: 'smooth', block: 'center' });
           input.focus();
         }
@@ -997,7 +1035,23 @@
             </div>
           `;
           const syncBtn = document.getElementById('btn-google-sync-now');
-          if (syncBtn) syncBtn.onclick = () => this.syncOnLogin(user);
+          if (syncBtn) {
+            syncBtn.onclick = async () => {
+              syncBtn.disabled = true;
+              syncBtn.style.opacity = '0.7';
+              syncBtn.textContent = 'Syncing...';
+              try {
+                await this.syncOnLogin(this.user || user);
+                if (window.showToast) window.showToast('Cloud progress synced successfully!');
+              } catch (e) {
+                console.warn('Sync failed:', e);
+              } finally {
+                syncBtn.disabled = false;
+                syncBtn.style.opacity = '1';
+                syncBtn.textContent = 'Sync Now';
+              }
+            };
+          }
           const switchBtn = document.getElementById('btn-google-switch');
           if (switchBtn) switchBtn.onclick = () => this.signInWithGoogle();
           const outBtn = document.getElementById('btn-google-signout');
