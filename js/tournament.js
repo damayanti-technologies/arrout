@@ -72,8 +72,8 @@ class TournamentManager {
   async submitScoreToFirebase(points) {
     try {
       if (typeof firebase === 'undefined' || !firebase.firestore || !firebase.apps.length) return;
-      const authUser = firebase.auth().currentUser;
-      if (!authUser) return; // Only signed-in users can write to Firestore leaderboard per firestore.rules
+      const authUser = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) || (window.FirebaseSync && window.FirebaseSync.user);
+      if (!authUser || !authUser.uid) return; // Only signed-in users can write to Firestore leaderboard per firestore.rules
       const db = firebase.firestore();
       const sm = window.storageManager;
       const uid = authUser.uid;

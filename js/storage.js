@@ -88,6 +88,9 @@ class StorageManager {
     } catch (e) {
       console.error('Failed to save to localStorage:', e);
     }
+    if (window.FirebaseSync && typeof window.FirebaseSync.scheduleCloudSync === 'function') {
+      window.FirebaseSync.scheduleCloudSync();
+    }
   }
 
   // ISO week id, always computed in UTC so it matches the tournament countdown

@@ -4,10 +4,12 @@
  * 
  * Capabilities:
  * - Always stores in localStorage first (100% offline resilient).
- * - Optional Google Sign-In via Firebase Auth.
- * - Bidirectional high-water-mark merge upon Google sign-in (never overwrites or loses progress).
- * - Automatic debounced cloud backup to Cloud Firestore (/users/{uid}) on every local progress change.
- * - Profile avatar, name, and status updates across the entire app.
+ * - Real native Google Sign-In via AndroidBridge on Android devices.
+ * - Standard Google OAuth popup on Web.
+ * - Zero hardcoded emails: users only see their own accounts.
+ * - Real-time two-way synchronization via Firestore onSnapshot (/users/{uid}).
+ * - Automatic debounced cloud backup on every local progress change.
+ * - Real-time weekly tournament score submission to live leaderboard.
  */
 
 (function () {
@@ -22,9 +24,23 @@
     db: null,
     auth: null,
     isConfigured: false,
+    _unsubRealtime: null,
+    _authCallback: null,
 
     init() {
-      // Restore persisted active Google user if present
+      // 1. Purge any stale developer emails previously cached in localStorage
+      try {
+        const active = localStorage.getItem('arrout_active_google_user');
+        if (active && (active.includes('reshwanth') || active.includes('sannivesham'))) {
+          localStorage.removeItem('arrout_active_google_user');
+        }
+        const savedAccs = localStorage.getItem('arrout_google_accounts');
+        if (savedAccs && (savedAccs.includes('reshwanth') || savedAccs.includes('sannivesham'))) {
+          localStorage.removeItem('arrout_google_accounts');
+        }
+      } catch (e) {}
+
+      // 2. Restore active Google user if previously logged in on this device
       try {
         const saved = localStorage.getItem('arrout_active_google_user');
         if (saved) {
@@ -47,7 +63,7 @@
       const cfg = window.FIREBASE_CONFIG;
       if (!cfg || !cfg.apiKey || cfg.apiKey.includes('YOUR_API_KEY') || !cfg.projectId || cfg.projectId.includes('YOUR_PROJECT_ID')) {
         this.isConfigured = false;
-        console.log('[FirebaseSync] Firebase config not set or using placeholders. Game is running in 100% LocalStorage mode.');
+        console.log('[FirebaseSync] Firebase config not set or using placeholders. Game is running in LocalStorage mode.');
         this.updateAuthUI(this.user);
         return;
       }
@@ -67,7 +83,7 @@
         this.isConfigured = true;
         isInitialized = true;
 
-        // Try offline persistence for Firestore
+        // Offline persistence for Firestore
         try {
           this.db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
         } catch (e) {}
@@ -94,16 +110,28 @@
     },
 
     async handleAuthStateChange(user) {
-      this.user = user;
-      authUser = user;
-
       if (user) {
-        console.log('[FirebaseSync] User signed in:', user.displayName || user.email || user.uid);
-        this.updateAuthUI(user);
-        await this.syncOnLogin(user);
+        const authObj = {
+          uid: user.uid,
+          displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Google Pilot'),
+          email: user.email,
+          photoURL: user.photoURL || ''
+        };
+        this.user = authObj;
+        authUser = authObj;
+        console.log('[FirebaseSync] User authenticated:', authObj.email || authObj.uid);
+        this.updateAuthUI(authObj);
+        await this.syncOnLogin(authObj);
+        this.listenToRealtimeCloudUpdates(authObj.uid);
       } else {
-        console.log('[FirebaseSync] User signed out. Operating in LocalStorage mode.');
-        this.updateAuthUI(null);
+        if (!this.user || !this.user.email) {
+          console.log('[FirebaseSync] User signed out. Operating in LocalStorage mode.');
+          if (this._unsubRealtime) {
+            try { this._unsubRealtime(); } catch (e) {}
+            this._unsubRealtime = null;
+          }
+          this.updateAuthUI(null);
+        }
       }
     },
 
@@ -112,69 +140,12 @@
         const raw = localStorage.getItem('arrout_google_accounts');
         if (raw) {
           const list = JSON.parse(raw);
-          if (Array.isArray(list) && list.length > 0) return list;
+          if (Array.isArray(list) && list.length > 0) {
+            return list.filter(a => a && a.email && !a.email.includes('reshwanth') && !a.email.includes('sannivesham'));
+          }
         }
       } catch (e) {}
-
-      // Default real device Google accounts matching native Android account chooser
-      const defaults = [
-        {
-          name: 'Reshwanth Gangula',
-          email: 'reshwanthreddy.gangula@gmail.com',
-          avatarColor: '#1A73E8',
-          initial: 'R'
-        },
-        {
-          name: 'Back up',
-          email: 'reshwanthphotos.1@gmail.com',
-          avatarColor: '#E91E63',
-          initial: 'B'
-        },
-        {
-          name: 'Reshwanth',
-          email: 'reshwanthreddy.gangula.1@gmail.com',
-          avatarColor: '#8E24AA',
-          initial: 'R'
-        },
-        {
-          name: 'Gangula Reshwanth Reddy',
-          email: 'reshwanthreddy4646@gmail.com',
-          avatarColor: '#D93025',
-          initial: 'R'
-        },
-        {
-          name: 'Reshwanth',
-          email: 'reshwanth.township@gmail.com',
-          avatarColor: '#F4511E',
-          initial: 'R'
-        },
-        {
-          name: 'sannivesham ..',
-          email: 'admin@sannivesham.com',
-          avatarColor: '#795548',
-          initial: 's'
-        },
-        {
-          name: 'Sannivesham',
-          email: 'yt.sannivesham@gmail.com',
-          avatarColor: '#00ACC1',
-          initial: 'S'
-        },
-        {
-          name: 'web sannivesham',
-          email: 'web.sannivesham@gmail.com',
-          avatarColor: '#8D6E63',
-          initial: 'w'
-        },
-        {
-          name: '24311A04X3 (E) Reshwanth',
-          email: '24311a04x3@ece.sreenidhi.edu.in',
-          avatarColor: '#3F51B5',
-          initial: 'R'
-        }
-      ];
-      this.saveAccountsList(defaults);
-      return defaults;
+      return [];
     },
 
     saveAccountsList(list) {
@@ -185,6 +156,7 @@
 
     saveGoogleAccount(acc) {
       if (!acc || !acc.email) return;
+      if (acc.email.includes('reshwanth') || acc.email.includes('sannivesham')) return;
       const list = this.getSavedGoogleAccounts();
       const existingIdx = list.findIndex(a => a.email.toLowerCase() === acc.email.toLowerCase());
       if (existingIdx !== -1) {
@@ -196,16 +168,24 @@
     },
 
     openGoogleSignInModal(onSuccessCallback) {
-      this._authCallback = onSuccessCallback || null;
+      if (onSuccessCallback) this._authCallback = onSuccessCallback;
+
+      // 1. If in native Android app, directly trigger native system account sheet
+      if (window.AndroidBridge && typeof window.AndroidBridge.signInWithGoogle === 'function') {
+        this.signInWithGoogle(onSuccessCallback);
+        return;
+      }
+
+      // 2. If in browser and no accounts saved on this device yet, trigger Google OAuth popup
+      const accounts = this.getSavedGoogleAccounts();
       const modal = document.getElementById('modal-google-auth');
-      if (!modal) {
+      if (!modal || accounts.length === 0) {
         this.signInWithGoogleOAuth();
         return;
       }
 
       this.renderAccountsListUI();
 
-      // Reset manual input box
       const manualBox = document.getElementById('google-manual-input-box');
       if (manualBox) manualBox.style.display = 'none';
       const emailInput = document.getElementById('google-custom-email');
@@ -225,16 +205,25 @@
       if (!container) return;
 
       const accounts = this.getSavedGoogleAccounts();
+      if (accounts.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 18px 12px; text-align: center; color: var(--text-muted); font-size: 0.85rem;">
+            No Google accounts connected yet.<br>Tap below to sign in with your Google account.
+          </div>
+        `;
+        return;
+      }
+
       const currentEmail = (this.user && this.user.email) ? this.user.email.toLowerCase() : '';
       const palette = ['#1A73E8', '#E91E63', '#8E24AA', '#D93025', '#F4511E', '#795548', '#00ACC1', '#8D6E63', '#3F51B5'];
 
       container.innerHTML = accounts.map((acc, idx) => {
         const isActive = acc.email && acc.email.toLowerCase() === currentEmail;
-        const initial = acc.initial || (acc.name || acc.email || 'G').charAt(0);
+        const initial = acc.initial || (acc.name || acc.email || 'G').charAt(0).toUpperCase();
         const avatarBg = acc.avatarColor || palette[idx % palette.length];
         const avatarHtml = acc.photoURL 
           ? `<img src="${acc.photoURL}" alt="${acc.name}">`
-          : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:${avatarBg};border-radius:50%;color:#FFF;font-weight:500;">${initial}</span>`;
+          : `<span style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:${avatarBg};border-radius:50%;color:#FFF;font-weight:600;">${initial}</span>`;
 
         return `
           <div class="google-account-row ${isActive ? 'active-account' : ''}" data-email="${acc.email}" role="button" tabindex="0">
@@ -248,7 +237,6 @@
         `;
       }).join('');
 
-      // Attach click listeners to account rows
       container.querySelectorAll('.google-account-row').forEach(row => {
         row.onclick = () => {
           const email = row.dataset.email;
@@ -325,6 +313,7 @@
       const oauthBtn = document.getElementById('btn-trigger-oauth-popup');
       if (oauthBtn) {
         oauthBtn.onclick = () => {
+          this.closeGoogleSignInModal();
           this.signInWithGoogleOAuth();
         };
       }
@@ -346,72 +335,99 @@
 
       try {
         localStorage.setItem('arrout_active_google_user', JSON.stringify(authObj));
+        this.saveGoogleAccount(authObj);
       } catch (e) {}
 
-      // Save to accounts list to bump it to recent
-      this.saveGoogleAccount(account);
-
-      // Update storageManager username if generic
-      if (window.storageManager && window.storageManager.data) {
-        if (!window.storageManager.data.username || window.storageManager.data.username.startsWith('ArrowPilot_')) {
-          window.storageManager.data.username = authObj.displayName;
-          window.storageManager.save();
-        }
-      }
-
-      // Update HUD & Profile
-      if (window.app && typeof window.app.updateHUD === 'function') {
-        window.app.updateHUD();
-      }
-
-      this.updateAuthUI(authObj);
       this.closeGoogleSignInModal();
-
-      if (window.showToast) {
-        window.showToast(`Signed in as ${authObj.email}!`);
-      }
-
-      // Trigger cloud sync
+      this.updateAuthUI(authObj);
       await this.syncOnLogin(authObj);
+      this.listenToRealtimeCloudUpdates(authObj.uid);
 
-      // Execute pending callback
-      if (typeof this._authCallback === 'function') {
+      if (this._authCallback) {
         const cb = this._authCallback;
         this._authCallback = null;
-        cb(authObj);
+        try { cb(authObj); } catch (e) {}
+      }
+
+      if (window.showToast) {
+        window.showToast('Signed in as ' + (authObj.displayName || authObj.email));
       }
     },
 
-    signInWithGoogle() {
-      // 1. If running in Android app with native AndroidBridge
+    signInWithGoogle(onSuccessCallback) {
+      if (onSuccessCallback) this._authCallback = onSuccessCallback;
+
+      // 1. Android Native App: trigger Android's native Google Sign-In intent
+      // Displays the accounts logged in on the user's phone via Google Play Services
       if (window.AndroidBridge && typeof window.AndroidBridge.signInWithGoogle === 'function') {
         try {
+          console.log('[FirebaseSync] Triggering Native Android Google Sign-In intent...');
           window.AndroidBridge.signInWithGoogle();
           return;
         } catch (e) {
-          console.warn('[FirebaseSync] Android native Google Sign-In call failed, opening in-app bottom sheet', e);
+          console.warn('[FirebaseSync] Android native Google Sign-In call failed:', e);
         }
       }
 
-      // 2. Open in-app Google Account Chooser bottom sheet
-      this.openGoogleSignInModal();
+      // 2. Web Browser: trigger official Google OAuth popup
+      this.signInWithGoogleOAuth();
     },
 
-    onNativeGoogleSignInSuccess(data) {
+    async onNativeGoogleSignInSuccess(data) {
       if (!data || !data.email) return;
-      this.selectGoogleAccount({
-        name: data.displayName || data.email.split('@')[0],
+      console.log('[FirebaseSync] Native Google Sign-In response received for:', data.email);
+
+      let firebaseUser = null;
+      if (this.auth && data.idToken) {
+        try {
+          const credential = firebase.auth.GoogleAuthProvider.credential(data.idToken);
+          const userCredential = await this.auth.signInWithCredential(credential);
+          firebaseUser = userCredential.user;
+          console.log('[FirebaseSync] Signed into Firebase Auth successfully with native token:', firebaseUser.uid);
+        } catch (err) {
+          console.warn('[FirebaseSync] signInWithCredential warning:', err);
+        }
+      }
+
+      const uid = (firebaseUser && firebaseUser.uid) ||
+                  (this.auth && this.auth.currentUser && this.auth.currentUser.uid) ||
+                  data.uid ||
+                  ('g_' + btoa(data.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20));
+
+      const authObj = {
+        uid: uid,
+        displayName: data.displayName || data.email.split('@')[0],
         email: data.email,
-        photoURL: data.photoURL || '',
-        uid: data.uid || ('g_' + btoa(data.email).replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 20)),
-        idToken: data.idToken || ''
-      });
+        photoURL: data.photoURL || (firebaseUser && firebaseUser.photoURL) || ''
+      };
+
+      this.user = authObj;
+      authUser = authObj;
+
+      try {
+        localStorage.setItem('arrout_active_google_user', JSON.stringify(authObj));
+        this.saveGoogleAccount(authObj);
+      } catch (e) {}
+
+      this.closeGoogleSignInModal();
+      this.updateAuthUI(authObj);
+      await this.syncOnLogin(authObj);
+      this.listenToRealtimeCloudUpdates(authObj.uid);
+
+      if (this._authCallback) {
+        const cb = this._authCallback;
+        this._authCallback = null;
+        try { cb(authObj); } catch (e) {}
+      }
+
+      if (window.showToast) {
+        window.showToast('Signed in as ' + (authObj.displayName || authObj.email));
+      }
     },
 
     async signInWithGoogleOAuth() {
-      if (!this.isConfigured || !this.auth) {
-        if (window.showToast) window.showToast('Signing in with selected Google account...');
-        this.selectGoogleAccount(this.getSavedGoogleAccounts()[0]);
+      if (!this.auth) {
+        if (window.showToast) window.showToast('Google Auth is unavailable.');
         return;
       }
 
@@ -424,29 +440,52 @@
         if (result && result.user) {
           const u = result.user;
           const acc = {
-            name: u.displayName || u.email.split('@')[0],
+            name: u.displayName || (u.email ? u.email.split('@')[0] : 'Google Pilot'),
             email: u.email,
             photoURL: u.photoURL || '',
             uid: u.uid
           };
-          this.selectGoogleAccount(acc);
+          this.user = acc;
+          authUser = acc;
+
+          try {
+            localStorage.setItem('arrout_active_google_user', JSON.stringify(acc));
+            this.saveGoogleAccount(acc);
+          } catch (e) {}
+
+          this.closeGoogleSignInModal();
+          this.updateAuthUI(acc);
+          await this.syncOnLogin(u);
+          this.listenToRealtimeCloudUpdates(u.uid);
+
+          if (this._authCallback) {
+            const cb = this._authCallback;
+            this._authCallback = null;
+            try { cb(acc); } catch (e) {}
+          }
+
+          if (window.showToast) window.showToast('Signed in as ' + (acc.name || acc.email));
         }
       } catch (err) {
-        if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+        console.error('[FirebaseSync] Google OAuth failed:', err);
+        if (err.code === 'auth/popup-blocked') {
           try {
             await this.auth.signInWithRedirect(provider);
           } catch (rErr) {
-            console.error('Redirect sign in error:', rErr);
-            if (window.showToast) window.showToast('Sign in failed: ' + (rErr.message || rErr.code));
+            if (window.showToast) window.showToast('Please allow popups to sign in with Google.');
           }
         } else if (err.code !== 'auth/popup-closed-by-user') {
-          console.error('Sign-in error:', err);
-          if (window.showToast) window.showToast('Google Sign-in failed: ' + (err.message || err.code));
+          if (window.showToast) window.showToast('Google Sign-In failed: ' + (err.message || 'Please try again.'));
         }
       }
     },
 
     async signOut() {
+      if (this._unsubRealtime) {
+        try { this._unsubRealtime(); } catch (e) {}
+        this._unsubRealtime = null;
+      }
+
       this.user = null;
       authUser = null;
       try {
@@ -464,6 +503,95 @@
         window.app.updateHUD();
       }
       if (window.showToast) window.showToast('Signed out from Google Cloud');
+    },
+
+    /**
+     * Active Real-Time Firestore Listener (/users/{uid})
+     */
+    listenToRealtimeCloudUpdates(uid) {
+      if (!this.db || !uid) return;
+      if (this._unsubRealtime) {
+        try { this._unsubRealtime(); } catch (e) {}
+        this._unsubRealtime = null;
+      }
+
+      console.log('[FirebaseSync] Real-time cloud sync active for:', uid);
+      this._unsubRealtime = this.db.collection('users').doc(uid).onSnapshot((docSnap) => {
+        if (!docSnap.exists || isSyncing) return;
+        const cloudData = docSnap.data();
+        if (!cloudData) return;
+        this.mergeRealtimeCloudData(cloudData);
+      }, (err) => {
+        console.warn('[FirebaseSync] Real-time cloud listener warning:', err);
+      });
+    },
+
+    /**
+     * Merge incoming real-time cloud data into local state
+     */
+    mergeRealtimeCloudData(cloud) {
+      if (!cloud || isSyncing) return;
+      const local = (window.storageManager && window.storageManager.data) ? window.storageManager.data : {};
+      let changed = false;
+
+      // Rating: keep highest
+      if (cloud.rating && cloud.rating !== local.rating) {
+        local.rating = Math.max(Number(local.rating) || 1200, Number(cloud.rating) || 1200);
+        changed = true;
+      }
+
+      // Completed levels: union of all cleared levels
+      const cloudLevels = cloud.completedLevels || {};
+      local.completedLevels = local.completedLevels || {};
+      for (const [lvlKey, cloudVal] of Object.entries(cloudLevels)) {
+        if (!local.completedLevels[lvlKey]) {
+          local.completedLevels[lvlKey] = cloudVal;
+          changed = true;
+        } else {
+          const locVal = local.completedLevels[lvlKey];
+          if (cloudVal.bestTime && (!locVal.bestTime || cloudVal.bestTime < locVal.bestTime)) {
+            locVal.bestTime = cloudVal.bestTime;
+            changed = true;
+          }
+        }
+      }
+
+      // Stats
+      if (cloud.stats) {
+        local.stats = local.stats || {};
+        if (cloud.stats.matchesPlayed > (local.stats.matchesPlayed || 0)) {
+          local.stats.matchesPlayed = cloud.stats.matchesPlayed;
+          changed = true;
+        }
+        if (cloud.stats.matchesWon > (local.stats.matchesWon || 0)) {
+          local.stats.matchesWon = cloud.stats.matchesWon;
+          changed = true;
+        }
+        if (cloud.stats.matchesLost > (local.stats.matchesLost || 0)) {
+          local.stats.matchesLost = cloud.stats.matchesLost;
+          changed = true;
+        }
+        if (cloud.stats.streakDays > (local.stats.streakDays || 0)) {
+          local.stats.streakDays = cloud.stats.streakDays;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        console.log('[FirebaseSync] Real-time cloud update merged into local game.');
+        if (window.storageManager) {
+          window.storageManager.data = local;
+          try {
+            localStorage.setItem('arrow_escape_player_data_v1', JSON.stringify(local));
+          } catch (e) {}
+        }
+        if (window.app) {
+          if (typeof window.app.updateHUD === 'function') window.app.updateHUD();
+          if (typeof window.app.renderProfile === 'function') window.app.renderProfile();
+          if (typeof window.app.renderLevelGrid === 'function') window.app.renderLevelGrid();
+        }
+        this.setSyncStatus('🟢 Real-Time Cloud Sync Active');
+      }
     },
 
     /**
@@ -493,12 +621,12 @@
           // 1. Rating: keep max
           local.rating = Math.max(Number(local.rating) || 1200, Number(cloud.rating) || 1200);
 
-          // 3. Username: keep Google name if local is generic or empty
+          // 2. Username: keep Google name if local is generic or empty
           if (user.displayName && (!local.username || local.username.startsWith('ArrowPilot_'))) {
             local.username = user.displayName;
           }
 
-          // 4. Completed Levels: Union of all levels cleared, keeping best time
+          // 3. Completed Levels: Union of all levels cleared, keeping best time
           const localLevels = local.completedLevels || {};
           const cloudLevels = cloud.completedLevels || {};
           const mergedLevels = { ...cloudLevels };
@@ -519,7 +647,7 @@
           }
           local.completedLevels = mergedLevels;
 
-          // 5. Stats: Union and best totals
+          // 4. Stats: Union and best totals
           local.stats = local.stats || {};
           const cloudStats = cloud.stats || {};
           local.stats.levelsCompleted = Object.keys(mergedLevels).length;
@@ -533,14 +661,14 @@
               : cloudStats.fastestTime;
           }
 
-          // 6. Achievements: Unlock if unlocked either locally or on cloud
+          // 5. Achievements: Unlock if unlocked either locally or on cloud
           const cloudAchMap = new Map((cloud.achievements || []).map(a => [a.id, a]));
           (local.achievements || []).forEach(a => {
             const ca = cloudAchMap.get(a.id);
             if (ca && ca.unlocked) a.unlocked = true;
           });
 
-          // 7. Themes: Union of owned themes
+          // 6. Themes: Union of owned themes
           const cloudThemes = cloud.themes || { owned: ['classic'], active: 'classic' };
           const mergedOwnedThemes = Array.from(new Set([
             ...(themesState.owned || ['classic']),
@@ -548,6 +676,7 @@
           ]));
           themesState.owned = mergedOwnedThemes;
           themesState.active = themesState.active || cloudThemes.active || 'classic';
+
           try {
             localStorage.setItem('arrout_themes_v1', JSON.stringify(themesState));
             if (window.ArroutThemes && window.ArroutThemes.state) {
@@ -563,12 +692,12 @@
 
           // Update HUD and views
           if (window.app) {
-            window.app.updateHUD();
-            if (window.app.renderProfile) window.app.renderProfile();
-            if (window.app.renderLevelGrid) window.app.renderLevelGrid();
+            if (typeof window.app.updateHUD === 'function') window.app.updateHUD();
+            if (typeof window.app.renderProfile === 'function') window.app.renderProfile();
+            if (typeof window.app.renderLevelGrid === 'function') window.app.renderLevelGrid();
           }
 
-          // Write back merged document to Firestore to bring cloud fully up to date
+          // Write back merged document to Firestore
           await this.saveToCloudNow();
 
           // Sync weekly tournament score to Firebase Leaderboard
@@ -598,7 +727,7 @@
         console.error('[FirebaseSync] Sync error during login:', err);
       } finally {
         isSyncing = false;
-        this.setSyncStatus('🟢 Cloud Backup Active');
+        this.setSyncStatus('🟢 Real-Time Cloud Sync Active');
       }
     },
 
@@ -657,7 +786,15 @@
         };
 
         await this.db.collection('users').doc(this.user.uid).set(payload, { merge: true });
-        this.setSyncStatus('🟢 Cloud Backup Active');
+        this.setSyncStatus('🟢 Real-Time Cloud Sync Active');
+
+        // Also submit tournament score if points exist
+        if (window.tournamentManager && typeof window.tournamentManager.submitScoreToFirebase === 'function') {
+          const pts = (local && local.tournamentPoints) || 0;
+          if (pts > 0) {
+            window.tournamentManager.submitScoreToFirebase(pts);
+          }
+        }
       } catch (err) {
         console.warn('[FirebaseSync] Cloud sync write failed (will retry):', err);
         this.setSyncStatus('⚠️ Cloud Sync Pending (Offline)');
@@ -698,22 +835,30 @@
             <div class="google-auth-card signed-in" style="background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%); border: 1.5px solid #C7D2FE; border-radius: 20px; padding: 14px 16px; margin-bottom: 16px; text-align: left;">
               <div class="google-auth-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
                 <div class="google-auth-brand" style="display: flex; align-items: center; gap: 8px;">
-                  <span class="google-auth-icon" style="font-size: 1.2rem;">☁️</span>
-                  <b class="google-auth-title" style="color: #3730A3; font-size: 0.95rem;">Google Cloud Save</b>
+                  <span class="google-auth-icon" style="font-size: 1.25rem;">☁️</span>
+                  <b class="google-auth-title" style="color: var(--text-navy); font-size: 0.95rem;">Google Cloud Connected</b>
                 </div>
-                <span id="google-sync-status" class="google-auth-badge" style="font-size: 0.72rem; font-weight: 700; color: #16A34A; background: #DCFCE7; padding: 2px 8px; border-radius: 8px;">🟢 Cloud Backup Active</span>
+                <span id="google-sync-status" class="sync-status-badge" style="font-size: 0.72rem; font-weight: 700; color: #15803D; background: #DCFCE7; padding: 2px 8px; border-radius: 10px;">
+                  🟢 Real-Time Cloud Sync Active
+                </span>
               </div>
-              <div class="google-auth-user" style="font-size: 0.8rem; color: #4338CA; margin-bottom: 10px;">
-                Connected: <b>${user.displayName || 'Google Pilot'}</b> <span class="google-auth-email" style="opacity:0.85;">(${user.email || 'Google Account'})</span>
+              <div class="google-auth-user-info" style="display: flex; align-items: center; gap: 10px; margin: 10px 0;">
+                <div class="google-auth-avatar-mini" style="width: 38px; height: 38px; border-radius: 50%; background: #6366F1; color: #FFF; display: flex; align-items: center; justify-content: center; font-weight: 700; overflow: hidden; flex-shrink: 0;">
+                  ${user.photoURL ? `<img src="${user.photoURL}" style="width: 100%; height: 100%; object-fit: cover;">` : (user.displayName || user.email || 'G').charAt(0).toUpperCase()}
+                </div>
+                <div style="flex: 1; overflow: hidden;">
+                  <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-navy);">${user.displayName || 'Google Pilot'}</div>
+                  <div style="font-size: 0.76rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${user.email || ''}</div>
+                </div>
               </div>
-              <div class="google-auth-actions" style="display: flex; gap: 8px;">
-                <button id="btn-google-sync-now" class="btn-google-action primary" style="flex: 1; background: #4F46E5; color: #FFF; border: none; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
-                  🔄 Sync Now
+              <div class="google-auth-actions" style="display: flex; gap: 8px; margin-top: 10px;">
+                <button id="btn-google-sync-now" style="flex: 1; background: #6366F1; color: #FFF; border: none; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
+                  Sync Now
                 </button>
-                <button id="btn-google-switch" class="btn-google-action" style="background: #FFF; color: #4F46E5; border: 1.5px solid #C7D2FE; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
-                  Switch
+                <button id="btn-google-switch" style="flex: 1; background: #FFF; color: #4F46E5; border: 1.5px solid #C7D2FE; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
+                  Switch Account
                 </button>
-                <button id="btn-google-signout" class="btn-google-action danger" style="background: #FFF; color: #DC2626; border: 1px solid #FECACA; padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">
+                <button id="btn-google-signout" style="background: #FEE2E2; color: #DC2626; border: none; padding: 8px 12px; border-radius: 12px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">
                   Sign Out
                 </button>
               </div>
@@ -722,7 +867,7 @@
           const syncBtn = document.getElementById('btn-google-sync-now');
           if (syncBtn) syncBtn.onclick = () => this.syncOnLogin(user);
           const switchBtn = document.getElementById('btn-google-switch');
-          if (switchBtn) switchBtn.onclick = () => this.openGoogleSignInModal();
+          if (switchBtn) switchBtn.onclick = () => this.signInWithGoogle();
           const outBtn = document.getElementById('btn-google-signout');
           if (outBtn) outBtn.onclick = () => this.signOut();
         } else {
@@ -735,7 +880,7 @@
                 </div>
               </div>
               <p class="google-auth-sub" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">
-                Sign in with Google to back up your progress and sync tournament scores across all your devices.
+                Sign in with Google to back up your progress and sync tournament scores across all your devices in real time.
               </p>
               <button id="btn-google-signin" class="btn-google-signin" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #FFF; color: #1E293B; border: 1.5px solid #CBD5E1; box-shadow: 0 2px 6px rgba(0,0,0,0.06); padding: 10px 18px; border-radius: 14px; font-weight: 800; font-size: 0.88rem; cursor: pointer; width: 100%; transition: transform 0.1s;">
                 <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -744,7 +889,7 @@
             </div>
           `;
           const inBtn = document.getElementById('btn-google-signin');
-          if (inBtn) inBtn.onclick = () => this.openGoogleSignInModal();
+          if (inBtn) inBtn.onclick = () => this.signInWithGoogle();
         }
       }
 
@@ -753,18 +898,23 @@
       if (tourneyBar) {
         if (user) {
           tourneyBar.innerHTML = `
-            <div style="background: #EEF2FF; border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.1rem;">👤</span>
-              <div style="font-size: 0.8rem; color: #3730A3;">
-                Connected: <b>${user.displayName || 'Google Pilot'}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
+            <div style="background: #EEF2FF; border: 1.5px solid #C7D2FE; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.1rem;">👤</span>
+                <div style="font-size: 0.8rem; color: #3730A3;">
+                  Connected: <b>${user.displayName || 'Google Pilot'}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
+                </div>
               </div>
+              <span style="font-size: 0.68rem; font-weight: 700; color: #15803D; background: #DCFCE7; padding: 2px 7px; border-radius: 8px;">
+                LIVE SYNC
+              </span>
             </div>
           `;
         } else {
           tourneyBar.innerHTML = `
             <div style="background: #FFFBEB; border: 1.5px solid #FDE68A; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
               <div style="font-size: 0.78rem; color: #92400E; line-height: 1.3;">
-                🔑 <b>Google Sign-In:</b> Choose your Google account to record your score on the live leaderboard.
+                🔑 <b>Google Sign-In:</b> Sign in to record your points on the live leaderboard.
               </div>
               <button id="btn-tourney-google-login" style="background: #F59E0B; color: #FFF; border: none; padding: 6px 14px; border-radius: 10px; font-weight: 800; font-size: 0.75rem; cursor: pointer; white-space: nowrap;">
                 Sign In
@@ -772,7 +922,7 @@
             </div>
           `;
           const loginBtn = document.getElementById('btn-tourney-google-login');
-          if (loginBtn) loginBtn.onclick = () => this.openGoogleSignInModal();
+          if (loginBtn) loginBtn.onclick = () => this.signInWithGoogle();
         }
       }
     },
