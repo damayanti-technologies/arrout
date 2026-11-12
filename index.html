@@ -748,24 +748,6 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
         <!-- Dynamic Accounts List showing Emails with divider lines -->
         <div id="google-accounts-list" class="google-accounts-list"></div>
 
-        <!-- Use another account option -->
-        <div id="google-use-another-btn" class="google-account-row google-add-account-row" role="button" tabindex="0">
-          <div class="google-account-avatar add-avatar">+</div>
-          <div class="google-account-info">
-            <div class="google-account-name">Use another account</div>
-            <div class="google-account-email">Sign in with a different Google email</div>
-          </div>
-        </div>
-
-        <!-- Inline manual input form -->
-        <div id="google-manual-input-box" class="google-manual-input-box" style="display: none;">
-          <input type="email" id="google-custom-email" class="google-input-field" placeholder="Enter Google email (e.g. name@gmail.com)" autocomplete="email">
-          <div class="google-input-btn-row">
-            <button type="button" id="google-cancel-input-btn" class="google-btn-secondary">Cancel</button>
-            <button type="button" id="google-confirm-input-btn" class="google-btn-primary">Sign In</button>
-          </div>
-        </div>
-
         <!-- Continue with Google Button -->
         <button type="button" id="btn-trigger-oauth-popup" class="google-oauth-btn">
           <div class="google-icon-circle">
@@ -778,6 +760,15 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           </div>
           <span>Continue with Google</span>
         </button>
+
+        <!-- Divider -->
+        <div class="google-auth-divider"><span>OR ENTER GOOGLE EMAIL</span></div>
+
+        <!-- Inline direct email sign in form -->
+        <div id="google-manual-input-box" class="google-manual-input-box">
+          <input type="email" id="google-custom-email" class="google-input-field" placeholder="Enter Google email (e.g. name@gmail.com)" autocomplete="email">
+          <button type="button" id="google-confirm-input-btn" class="google-btn-primary">Sign In</button>
+        </div>
 
         <p class="google-disclaimer-text">
           To continue, Google will share your name, email address, and profile picture with Arrout.

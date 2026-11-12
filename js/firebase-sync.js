@@ -181,7 +181,7 @@
       this.renderAccountsListUI();
 
       const manualBox = document.getElementById('google-manual-input-box');
-      if (manualBox) manualBox.style.display = 'none';
+      if (manualBox) manualBox.style.display = 'flex';
       const emailInput = document.getElementById('google-custom-email');
       if (emailInput) emailInput.value = '';
 
@@ -271,32 +271,14 @@
         };
       }
 
-      // 'Use another account' toggle
-      const useAnotherBtn = document.getElementById('google-use-another-btn');
-      const manualBox = document.getElementById('google-manual-input-box');
+      // Direct Google email input handler
       const customInput = document.getElementById('google-custom-email');
-      const cancelInputBtn = document.getElementById('google-cancel-input-btn');
       const confirmInputBtn = document.getElementById('google-confirm-input-btn');
 
-      if (useAnotherBtn && manualBox) {
-        useAnotherBtn.onclick = () => {
-          manualBox.style.display = manualBox.style.display === 'none' ? 'flex' : 'none';
-          if (manualBox.style.display === 'flex' && customInput) {
-            customInput.focus();
-          }
-        };
-      }
-
-      if (cancelInputBtn && manualBox) {
-        cancelInputBtn.onclick = () => {
-          manualBox.style.display = 'none';
-        };
-      }
-
-      const handleConfirmCustom = () => {
+      const handleConfirmCustom = async () => {
         if (!customInput) return;
         const val = customInput.value.trim();
-        if (!val || !val.includes('@')) {
+        if (!val || !val.includes('@') || !val.includes('.')) {
           if (window.showToast) window.showToast('Please enter a valid Google email address.');
           return;
         }
@@ -308,7 +290,7 @@
           photoURL: ''
         };
         this.saveGoogleAccount(newAcc);
-        this.selectGoogleAccount(newAcc);
+        await this.selectGoogleAccount(newAcc);
       };
 
       if (confirmInputBtn) confirmInputBtn.onclick = handleConfirmCustom;
@@ -318,11 +300,10 @@
         };
       }
 
-      // 'Open Google Web OAuth' button
+      // 'Continue with Google' button
       const oauthBtn = document.getElementById('btn-trigger-oauth-popup');
       if (oauthBtn) {
         oauthBtn.onclick = () => {
-          this.closeGoogleSignInModal();
           this.signInWithGoogleOAuth();
         };
       }
@@ -436,7 +417,9 @@
 
     async signInWithGoogleOAuth() {
       if (!this.auth) {
-        if (window.showToast) window.showToast('Google Auth is unavailable.');
+        if (window.showToast) window.showToast('Please enter your Google email below to sign in.');
+        const input = document.getElementById('google-custom-email');
+        if (input) input.focus();
         return;
       }
 
@@ -444,7 +427,6 @@
       provider.setCustomParameters({ prompt: 'select_account' });
 
       try {
-        if (window.showToast) window.showToast('Opening Google Sign-In...');
         const result = await this.auth.signInWithPopup(provider);
         if (result && result.user) {
           const u = result.user;
@@ -476,15 +458,22 @@
           if (window.showToast) window.showToast('Signed in as ' + (acc.name || acc.email));
         }
       } catch (err) {
-        console.error('[FirebaseSync] Google OAuth failed:', err);
-        if (err.code === 'auth/popup-blocked') {
-          try {
-            await this.auth.signInWithRedirect(provider);
-          } catch (rErr) {
-            if (window.showToast) window.showToast('Please allow popups to sign in with Google.');
+        console.warn('[FirebaseSync] Google popup notice:', err);
+        // CRITICAL: NEVER call signInWithRedirect! 
+        // signInWithRedirect causes third-party storage partitioning crash (missing initial state) on cross-domain hosts.
+        if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+          if (window.showToast) {
+            window.showToast('Popup was blocked by browser. Enter your Google email below to sign in instantly.');
           }
         } else if (err.code !== 'auth/popup-closed-by-user') {
-          if (window.showToast) window.showToast('Google Sign-In failed: ' + (err.message || 'Please try again.'));
+          if (window.showToast) {
+            window.showToast('Notice: ' + (err.message || 'Please enter email below.'));
+          }
+        }
+        const input = document.getElementById('google-custom-email');
+        if (input) {
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          input.focus();
         }
       }
     },
