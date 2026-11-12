@@ -776,6 +776,132 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
       </div>
     </div>
 
+    <!-- In-App Android-Style Share Sheet Modal (Matches native system share sheet) -->
+    <div id="modal-share-sheet" class="app-modal modal-bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="share-sheet-title">
+      <div class="modal-share-sheet-card">
+        <!-- Drag Handle Indicator -->
+        <div class="share-sheet-drag-handle"></div>
+
+        <!-- Header -->
+        <div class="share-sheet-header">
+          <h2 id="share-sheet-title" class="share-sheet-title">Sharing text</h2>
+          <button type="button" class="share-sheet-close" id="btn-close-share-sheet" aria-label="Close">✕</button>
+        </div>
+
+        <!-- Text Preview Bubble with Copy Button (Matches user screenshot) -->
+        <div class="share-sheet-preview-card">
+          <div class="share-preview-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5F6368" stroke-width="2.2" stroke-linecap="round">
+              <path d="M4 6h16M4 12h16M4 18h10" />
+            </svg>
+          </div>
+          <div class="share-preview-text-box">
+            <div id="share-sheet-preview-title" class="share-preview-main">Join my Arrout room! Code: 8CA5H</div>
+            <div id="share-sheet-preview-url" class="share-preview-sub">https://arrout.damayanticrest.online/#room-8CA5H</div>
+          </div>
+          <button type="button" id="btn-share-preview-copy" class="share-preview-copy-btn" title="Copy link" aria-label="Copy link">
+            <svg id="share-copy-icon-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Apps Grid (Matches exact apps from user screenshot) -->
+        <div class="share-apps-grid">
+          <!-- WhatsApp -->
+          <button type="button" class="share-app-item" id="share-app-whatsapp">
+            <div class="share-app-icon-circle whatsapp-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFFFFF">
+                <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.58 20.15 12.04 20.15C10.56 20.15 9.11 19.76 7.85 19L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 15 3.8 13.47 3.8 11.91C3.81 7.37 7.5 3.67 12.05 3.67M9.53 7.35C9.34 7.35 9.04 7.42 8.78 7.7C8.52 7.97 7.8 8.64 7.8 10.03C7.8 11.42 8.81 12.76 8.95 12.95C9.1 13.14 10.95 15.97 13.78 17.19C14.45 17.48 14.98 17.65 15.39 17.78C16.06 18 16.67 17.96 17.16 17.89C17.7 17.81 18.82 17.21 19.05 16.56C19.29 15.91 19.29 15.36 19.22 15.24C19.14 15.12 18.96 15.06 18.68 14.92C18.41 14.78 17.06 14.12 16.81 14.03C16.56 13.93 16.38 13.89 16.19 14.17C16 14.45 15.48 15.06 15.32 15.24C15.16 15.43 15 15.45 14.72 15.31C14.45 15.17 13.58 14.89 12.54 13.96C11.73 13.23 11.19 12.34 11.03 12.06C10.88 11.78 11.01 11.64 11.15 11.5C11.28 11.37 11.43 11.17 11.57 11.01C11.72 10.84 11.76 10.73 11.86 10.54C11.95 10.36 11.91 10.2 11.84 10.06C11.77 9.93 11.21 8.56 10.98 8C10.76 7.46 10.53 7.54 10.36 7.53C10.2 7.53 10.01 7.53 9.83 7.53C9.64 7.53 9.42 7.57 9.53 7.35Z"/>
+              </svg>
+            </div>
+            <span class="share-app-label">WhatsApp</span>
+          </button>
+
+          <!-- Instagram -->
+          <button type="button" class="share-app-item" id="share-app-instagram">
+            <div class="share-app-icon-circle instagram-bg">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+              </svg>
+            </div>
+            <span class="share-app-label">Instagram</span>
+          </button>
+
+          <!-- Telegram -->
+          <button type="button" class="share-app-item" id="share-app-telegram">
+            <div class="share-app-icon-circle telegram-bg">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="#FFFFFF">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.75-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+              </svg>
+            </div>
+            <span class="share-app-label">Telegram</span>
+          </button>
+
+          <!-- Messages (SMS) -->
+          <button type="button" class="share-app-item" id="share-app-sms">
+            <div class="share-app-icon-circle sms-bg">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+            </div>
+            <span class="share-app-label">Messages</span>
+          </button>
+
+          <!-- Gmail -->
+          <button type="button" class="share-app-item" id="share-app-gmail">
+            <div class="share-app-icon-circle gmail-bg">
+              <svg width="26" height="26" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M2 18V8l10 6 10-6v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/>
+                <path fill="#EA4335" d="M12 14L2 8l10-6 10 6-10 6z"/>
+                <path fill="#34A853" d="M22 8v10a2 2 0 0 1-2 2h-3V11l5-3z"/>
+                <path fill="#FBBC05" d="M2 8v10a2 2 0 0 0 2 2h3V11L2 8z"/>
+              </svg>
+            </div>
+            <span class="share-app-label">Gmail</span>
+          </button>
+
+          <!-- X (Twitter) -->
+          <button type="button" class="share-app-item" id="share-app-x">
+            <div class="share-app-icon-circle x-bg">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#FFFFFF">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+            </div>
+            <span class="share-app-label">X</span>
+          </button>
+
+          <!-- Quick Share / System Share -->
+          <button type="button" class="share-app-item" id="share-app-system">
+            <div class="share-app-icon-circle quick-share-bg">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+            </div>
+            <span class="share-app-label">Quick Share</span>
+          </button>
+
+          <!-- Copy Link -->
+          <button type="button" class="share-app-item" id="share-app-copy">
+            <div class="share-app-icon-circle copy-link-bg">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </div>
+            <span class="share-app-label">Copy Link</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- App Open Promotional Modal (Sannivesham App) -->
     <div id="modal-app-promo" class="app-modal" role="dialog" aria-modal="true" aria-label="Special Announcement">
       <div class="promo-modal-card">

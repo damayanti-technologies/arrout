@@ -458,11 +458,145 @@
         errEl.hidden = false;
       }
     };
+    function openInAppShareSheet(text, link, code) {
+      var modal = $('modal-share-sheet');
+      if (!modal) return;
+
+      var titleEl = $('share-sheet-preview-title');
+      var urlEl = $('share-sheet-preview-url');
+      if (titleEl) titleEl.textContent = text;
+      if (urlEl) urlEl.textContent = link;
+
+      var fullMsg = text + '\n' + link;
+
+      // WhatsApp
+      var wBtn = $('share-app-whatsapp');
+      if (wBtn) {
+        wBtn.onclick = function () {
+          window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(fullMsg), '_blank');
+        };
+      }
+
+      // Instagram
+      var iBtn = $('share-app-instagram');
+      if (iBtn) {
+        iBtn.onclick = async function () {
+          try { await navigator.clipboard.writeText(fullMsg); } catch (e) {}
+          toast('Room link copied! Paste into Instagram DM or Story.');
+          window.open('https://instagram.com', '_blank');
+        };
+      }
+
+      // Telegram
+      var tBtn = $('share-app-telegram');
+      if (tBtn) {
+        tBtn.onclick = function () {
+          window.open('https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(text), '_blank');
+        };
+      }
+
+      // Messages (SMS)
+      var sBtn = $('share-app-sms');
+      if (sBtn) {
+        sBtn.onclick = function () {
+          window.location.href = 'sms:?body=' + encodeURIComponent(fullMsg);
+        };
+      }
+
+      // Gmail
+      var gBtn = $('share-app-gmail');
+      if (gBtn) {
+        gBtn.onclick = function () {
+          window.open('mailto:?subject=' + encodeURIComponent('Join my Arrout room! Code: ' + code) + '&body=' + encodeURIComponent(fullMsg), '_blank');
+        };
+      }
+
+      // X (Twitter)
+      var xBtn = $('share-app-x');
+      if (xBtn) {
+        xBtn.onclick = function () {
+          window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(fullMsg), '_blank');
+        };
+      }
+
+      // Quick Share / System Share Sheet
+      var sysBtn = $('share-app-system');
+      if (sysBtn) {
+        sysBtn.onclick = async function () {
+          if (navigator.share) {
+            try {
+              await navigator.share({ title: 'Arrout Room ' + code, text: text, url: link });
+              return;
+            } catch (e) {
+              if (e && e.name === 'AbortError') return;
+            }
+          }
+          try { await navigator.clipboard.writeText(fullMsg); toast('Link copied to clipboard!'); } catch (e) {}
+        };
+      }
+
+      // Copy Link Buttons
+      var copyBtn = $('share-app-copy');
+      var prevCopyBtn = $('btn-share-preview-copy');
+      var handleCopy = async function () {
+        try {
+          await navigator.clipboard.writeText(fullMsg);
+          toast('Link copied to clipboard!');
+          if (prevCopyBtn) {
+            prevCopyBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34A853" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            setTimeout(function () {
+              prevCopyBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+            }, 2000);
+          }
+        } catch (e) {
+          toast('Could not copy link.');
+        }
+      };
+
+      if (copyBtn) copyBtn.onclick = handleCopy;
+      if (prevCopyBtn) prevCopyBtn.onclick = handleCopy;
+
+      // Close handlers
+      var closeBtn = $('btn-close-share-sheet');
+      if (closeBtn) closeBtn.onclick = function () { modal.classList.remove('open'); };
+      modal.onclick = function (e) {
+        if (e.target === modal) modal.classList.remove('open');
+      };
+
+      modal.classList.add('open');
+    }
+
     $('room-share').onclick = async function () {
-      var text = 'Join my Arrout room! Code: ' + R.code.toUpperCase(), link = linkFor(R.code);
-      try { if (navigator.share) { await navigator.share({ title: 'Arrout', text: text, url: link }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-      try { await navigator.clipboard.writeText(text + ' ' + link); toast('Link copied. Send it to your friends.'); }
-      catch (e) { $('room-link').focus(); $('room-link').select(); toast('Copy the link below and send it.'); }
+      var code = (R.code || '').toUpperCase();
+      var text = 'Join my Arrout room! Code: ' + code;
+      var link = linkFor(code);
+
+      // 1. Android Bridge in native app if available
+      if (window.AndroidBridge) {
+        if (typeof window.AndroidBridge.share === 'function') {
+          try { window.AndroidBridge.share(text + ' ' + link); return; } catch (e) {}
+        }
+        if (typeof window.AndroidBridge.shareText === 'function') {
+          try { window.AndroidBridge.shareText(text + ' ' + link); return; } catch (e) {}
+        }
+      }
+
+      // 2. Try native system navigator.share if available and supported
+      if (navigator.share) {
+        try {
+          var shareData = { title: 'Arrout Room ' + code, text: text, url: link };
+          if (!navigator.canShare || navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            return;
+          }
+        } catch (e) {
+          if (e && e.name === 'AbortError') return;
+          console.warn('[Share] navigator.share note:', e);
+        }
+      }
+
+      // 3. Fallback to native-styled In-App Share Sheet showing all apps
+      openInAppShareSheet(text, link, code);
     };
     $('room-copy-code').onclick = async function () {
       try { await navigator.clipboard.writeText(R.code.toUpperCase()); toast('Code copied'); }
