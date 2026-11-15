@@ -176,9 +176,21 @@
     openGoogleSignInModal(onSuccessCallback) {
       if (onSuccessCallback) this._authCallback = onSuccessCallback;
 
+      // In Android wrapper, prefer triggering native Google Sign-In account chooser
+      if (window.AndroidBridge && typeof window.AndroidBridge.signInWithGoogle === 'function') {
+        try {
+          console.log('[FirebaseSync] Triggering Native Android Google Sign-In intent...');
+          window.AndroidBridge.signInWithGoogle();
+          return;
+        } catch (e) {
+          console.warn('[FirebaseSync] Android native call failed:', e);
+        }
+      }
+
       const modal = document.getElementById('modal-google-auth');
       if (!modal) return;
 
+      this.renderAccountsListUI();
       modal.classList.add('open');
       this.setupModalEventListeners();
     },
@@ -470,9 +482,9 @@
         }
       }
 
-      // 2. Web Browser: Trigger Google Sign-In directly
-      console.log('[FirebaseSync] Triggering Google Sign-In...');
-      this.signInWithGoogleOAuth();
+      // 2. Web Browser: Open bottom sheet modal (matching native Google account chooser design)
+      console.log('[FirebaseSync] Opening Google Sign-In bottom sheet modal...');
+      this.openGoogleSignInModal(onSuccessCallback);
     },
 
     async onNativeGoogleSignInSuccess(data) {
@@ -610,6 +622,10 @@
         try {
           await this.auth.signOut();
         } catch (err) {}
+      }
+
+      if (window.AndroidBridge && typeof window.AndroidBridge.signOut === 'function') {
+        try { window.AndroidBridge.signOut(); } catch (e) {}
       }
 
       this.updateAuthUI(null);
