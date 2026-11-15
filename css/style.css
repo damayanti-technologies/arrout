@@ -1205,7 +1205,7 @@ body{background:#EAF2FF}
 .home-logo{color:#3F8CF0;text-shadow:0 3px 0 #fff,0 6px 0 #BFDBFB,0 12px 16px rgba(80,140,230,.25)}
 .home-tagline{color:#7FA8D9}
 .mode-grid-card{border:none!important;box-shadow:0 8px 18px -10px rgba(70,130,220,.35)}
-.card-play{background:linear-gradient(135deg,#CFE6FF,#A9D2FF)!important}
+.card-play{background:linear-gradient(135deg,#528FF7 0%,#3574EE 100%)!important;box-shadow:0 10px 24px rgba(53,116,238,0.32)!important}
 .card-pvp{background:linear-gradient(135deg,#EAF4FF,#D3E8FF)!important}
 .card-daily{background:linear-gradient(135deg,#E3F6FF,#C4E8FA)!important}
 .card-tournament{background:linear-gradient(135deg,#EEF1FF,#D5DDFB)!important}
@@ -1545,10 +1545,10 @@ html[data-dark="1"] .hero-triangle-arrow {
   position: relative;
   display: block;
   width: 100%;
-  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  background: linear-gradient(135deg, #528FF7 0%, #3574EE 100%);
   border-radius: clamp(16px, 2vh, 22px);
   padding: clamp(10px, 1.4vh, 15px) clamp(14px, 2vh, 20px);
-  box-shadow: 0 10px 26px rgba(79, 70, 229, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 24px rgba(53, 116, 238, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.45);
   cursor: pointer;
   overflow: hidden;
   border: 0;
@@ -1776,6 +1776,11 @@ html[data-dark="1"] .home-quote-pill {
   background: rgba(31, 45, 74, 0.88);
   border-color: rgba(255, 255, 255, 0.08);
   color: #DCE6F5;
+}
+html[data-dark="1"] .hero-play-card,
+html[data-dark="1"] .card-play {
+  background: linear-gradient(135deg, #4376E6 0%, #2A58C7 100%) !important;
+  box-shadow: 0 10px 26px rgba(42, 88, 199, 0.42), inset 0 1px 1px rgba(255, 255, 255, 0.28) !important;
 }
 html[data-dark="1"] .mode-clay-card {
   background: #1F2D4A !important;
