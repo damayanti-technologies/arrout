@@ -1,16 +1,20 @@
 /* ---- js/arrow-path-generator.js ---- */
 /**
  * ARROUT - Level lookup.
- * Every campaign level (1-1000) is pre-built, verified solvable and stored in levels-1000.js,
+ * Every campaign level is pre-built, verified solvable and stored in levels data (levels-5000.js),
  * ordered from easiest to hardest. This class only decodes the requested level for the engine.
- * (The old fallback generator was removed: it could not detect collisions, so its
- * "guaranteed solvable" claim was false, and no level ever reached it.)
  */
 class BendingPuzzleGenerator {
+  static maxLevel() {
+    return (window.ARROUT_LEVEL_COUNT || (window.ARROUT_LEVELS && window.ARROUT_LEVELS.length) || (window.ARROUT_LEVELS_1000 && window.ARROUT_LEVELS_1000.length) || 5000);
+  }
+
   static generateLevel(levelNum = 1) {
-    const num = Math.min(1000, Math.max(1, Math.floor(Number(levelNum)) || 1));
-    const raw = window.ARROUT_LEVELS_1000 && window.ARROUT_LEVELS_1000[num - 1];
-    if (!raw) throw new Error('Level data not loaded (levels-1000.js)');
+    const max = this.maxLevel();
+    const num = Math.min(max, Math.max(1, Math.floor(Number(levelNum)) || 1));
+    const all = window.ARROUT_LEVELS || window.ARROUT_LEVELS_1000;
+    const raw = all && all[num - 1];
+    if (!raw) throw new Error('Level data not loaded for level ' + num);
     const lvl = window.arroutDecodeLevel(raw);
     return {
       level: lvl.level,

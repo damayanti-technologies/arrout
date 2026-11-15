@@ -52,10 +52,24 @@ class ArroutApp {
     return Object.keys(done).map(k => /^LVL-(\d+)$/.test(k) ? parseInt(RegExp.$1, 10) : 0).filter(n => n > 0);
   }
 
-  // Highest level the player may open: one past the furthest cleared level (max 1000)
-  unlockedLevel() {
+  // Maximum campaign level available in data
+  maxLevel() {
+    return (window.ARROUT_LEVEL_COUNT || (window.ARROUT_LEVELS && window.ARROUT_LEVELS.length) || (window.ARROUT_LEVELS_1000 && window.ARROUT_LEVELS_1000.length) || 5000);
+  }
+
+  // Furthest campaign level cleared so far
+  highestClearedLevel() {
     const n = this.clearedLevelNumbers();
-    return Math.min(1000, (n.length ? Math.max.apply(null, n) : 0) + 1);
+    let max = 0;
+    for (let i = 0; i < n.length; i++) {
+      if (n[i] > max) max = n[i];
+    }
+    return max;
+  }
+
+  // Highest level the player may open: one past the furthest cleared level
+  unlockedLevel() {
+    return this.highestClearedLevel() + 1;
   }
 
   setupHistoryRouting() {
@@ -77,6 +91,14 @@ class ArroutApp {
     if (screen === 'puzzle' || screen === 'play') {
       let lvl = param ? parseInt(param, 10) : this.unlockedLevel();
       if (!isFinite(lvl) || lvl < 1) lvl = this.unlockedLevel();
+
+      // If user cleared all levels and tries to navigate past maxLevel in campaign mode
+      if (lvl > this.maxLevel() && lvl < 10001) {
+        this.navigate('levels', null, { replace: true });
+        this.showComingSoonModal();
+        return;
+      }
+
       const allowed = this._forceHash === hash || (lvl <= this.unlockedLevel());
       if (!allowed) {
         // typed/bookmarked URL or history entry for a locked level or a special mode
@@ -85,7 +107,7 @@ class ArroutApp {
           this.navigate('home', null, { replace: true });
         } else {
           this.showToast('Clear the earlier levels first.');
-          this.navigate('puzzle', this.unlockedLevel(), { replace: true });
+          this.navigate('puzzle', Math.min(this.unlockedLevel(), this.maxLevel()), { replace: true });
         }
         return;
       }
@@ -156,8 +178,9 @@ class ArroutApp {
 
     // Home screen quick stats
     const cleared = this.clearedLevelNumbers().length;
+    const maxLvl = this.maxLevel();
     const homeCleared = document.getElementById('home-cleared-count');
-    if (homeCleared) homeCleared.textContent = `${cleared}/1000`;
+    if (homeCleared) homeCleared.textContent = `${cleared}/${maxLvl}`;
     const homeStreak = document.getElementById('home-streak-count');
     if (homeStreak) homeStreak.textContent = (data.stats && data.stats.streakDays) || 0;
   }
@@ -222,11 +245,25 @@ class ArroutApp {
 
     // Home: show the level PLAY will open
     const lvlEl = document.getElementById('home-level-text');
-    if (lvlEl) lvlEl.textContent = 'Level ' + this.unlockedLevel();
+    const playLabel = document.querySelector('.play-action-label');
+    const unlocked = this.unlockedLevel();
+    const maxLvl = this.maxLevel();
+    if (unlocked > maxLvl) {
+      if (playLabel) playLabel.textContent = 'ALL LEVELS CLEARED!';
+      if (lvlEl) lvlEl.textContent = 'Coming Soon 🚀';
+    } else {
+      if (playLabel) playLabel.textContent = 'CONTINUE PUZZLE';
+      if (lvlEl) lvlEl.textContent = 'Level ' + unlocked;
+    }
 
     // Screen specific triggers
     if (screenName === 'puzzle') {
       const targetLvl = levelNum || this.unlockedLevel();
+      if (targetLvl > maxLvl && targetLvl < 10001) {
+        this.navigate('levels', null, { replace: true });
+        this.showComingSoonModal();
+        return;
+      }
       this.launchBendingLevel(targetLvl, this.activeDifficulty);
     } else if (screenName === 'levels') {
       this.renderLevelGrid();
@@ -249,6 +286,10 @@ class ArroutApp {
       btn.addEventListener('click', (e) => {
         e.preventDefault();
         const target = btn.dataset.nav;
+        if (target === 'puzzle' && this.unlockedLevel() > this.maxLevel()) {
+          this.showComingSoonModal();
+          return;
+        }
         this.navigate(target);
       });
     });
@@ -395,19 +436,21 @@ class ArroutApp {
       },
       onComplete: (stats) => {
         const res = window.storageManager.recordLevelCompletion(`LVL-${this.currentLevelNum}`, difficulty, stats.totalTime);
+        const nextLvl = Number(this.currentLevelNum) + 1;
+        const isAllCleared = nextLvl > this.maxLevel();
+
         this.showVictoryModal({
-          title: `Level ${this.currentLevelNum} Cleared!`,
+          title: isAllCleared ? `All ${this.maxLevel()} Levels Cleared!` : `Level ${this.currentLevelNum} Cleared!`,
           time: `${stats.totalTime}s`,
           moves: stats.moves,
           tourneyPoints: res.tournamentPoints,
           nextAction: () => {
-            const nextLvl = Number(this.currentLevelNum) + 1;
             const proceed = () => {
-              if (nextLvl <= 1000) {
+              if (nextLvl <= this.maxLevel()) {
                 this.navigate('puzzle', nextLvl, { replace: true });
               } else {
-                this.showToast('🏆 Master Champion! You cleared all 1000 levels!');
-                this.navigate('levels', null, { replace: true });
+                this.navigate('home', null, { replace: true });
+                this.showComingSoonModal();
               }
             };
 
@@ -508,6 +551,39 @@ class ArroutApp {
       };
     }
     this.updateHUD();
+  }
+
+  showComingSoonModal() {
+    const modal = document.getElementById('modal-coming-soon');
+    if (!modal) return;
+    if (window.soundEngine && window.soundEngine.playCheer) window.soundEngine.playCheer();
+
+    const maxLvl = this.maxLevel();
+    const badge = document.getElementById('coming-soon-badge');
+    if (badge) {
+      badge.textContent = `⭐ ${maxLvl.toLocaleString()} / ${maxLvl.toLocaleString()} LEVELS CLEARED`;
+    }
+
+    modal.classList.add('open');
+
+    const closeBtn = document.getElementById('btn-close-coming-soon');
+    if (closeBtn) closeBtn.onclick = () => modal.classList.remove('open');
+
+    const levelsBtn = document.getElementById('btn-coming-soon-levels');
+    if (levelsBtn) {
+      levelsBtn.onclick = () => {
+        modal.classList.remove('open');
+        this.navigate('levels');
+      };
+    }
+
+    const homeBtn = document.getElementById('btn-coming-soon-home');
+    if (homeBtn) {
+      homeBtn.onclick = () => {
+        modal.classList.remove('open');
+        this.navigate('home');
+      };
+    }
   }
 
   // --- Play Store Rating System (Post Level 10) ---
@@ -665,20 +741,21 @@ class ArroutApp {
     }
   }
 
-  // --- Level Selection Screen (1000 levels, unlocked in order) ---
+  // --- Level Selection Screen (5000 levels, unlocked in order) ---
   renderLevelGrid() {
     const grid = document.getElementById('levels-grid-container');
     if (!grid) return;
 
-    const allLevels = (window.ARROUT_LEVELS_1000 || []);
+    const allLevels = (window.ARROUT_LEVELS || window.ARROUT_LEVELS_1000 || []);
     const filter = (this.activeDifficulty || 'all').toLowerCase();
     const done = (window.storageManager && window.storageManager.data.completedLevels) || {};
     const unlocked = this.unlockedLevel();
+    const maxLvl = this.maxLevel();
     const frag = document.createDocumentFragment();
 
     allLevels.forEach(c => {
       if (filter !== 'all' && String(c.d || '').toLowerCase() !== filter) return;
-      const meta = window.arroutLevelMeta(c);
+      const meta = (window.arroutLevelMeta ? window.arroutLevelMeta(c) : { level: c.level, difficulty: c.d });
       const num = meta.level;
       const isDone = !!done['LVL-' + num];
       const locked = num > unlocked;
@@ -696,6 +773,18 @@ class ArroutApp {
       frag.appendChild(card);
     });
 
+    // Coming Soon card at the end of the levels grid
+    const soonCard = document.createElement('div');
+    soonCard.className = 'level-clay-card coming-soon-card';
+    soonCard.style.cssText = 'grid-column: 1 / -1; padding: 18px 12px; background: linear-gradient(135deg, #EEF2FF, #E0E7FF); border: 2px dashed #6366F1; border-radius: 20px; text-align: center; cursor: pointer; box-shadow: 0 4px 14px rgba(99,102,241,0.12); margin-top: 10px;';
+    soonCard.innerHTML = `
+      <div style="font-size:1.8rem; margin-bottom:4px;">🚀</div>
+      <div style="font-size:1rem; font-weight:800; color:#312E81; margin-bottom:2px;">More Levels Coming Soon!</div>
+      <div style="font-size:0.75rem; color:#4F46E5; font-weight:600;">Stay tuned for Level ${maxLvl + 1}+</div>
+    `;
+    soonCard.onclick = () => this.showComingSoonModal();
+    frag.appendChild(soonCard);
+
     grid.innerHTML = '';
     grid.appendChild(frag);
 
@@ -703,6 +792,10 @@ class ArroutApp {
       grid._wired = true;
       const open = (card) => {
         if (!card) return;
+        if (card.classList.contains('coming-soon-card')) {
+          this.showComingSoonModal();
+          return;
+        }
         const n = parseInt(card.dataset.lvl, 10);
         if (n > this.unlockedLevel()) {
           this.showToast(`Clear level ${this.unlockedLevel()} to unlock this one.`);
@@ -710,11 +803,19 @@ class ArroutApp {
         }
         this.navigate('puzzle', n);
       };
-      grid.addEventListener('click', e => open(e.target.closest('[data-lvl]')));
+      grid.addEventListener('click', e => open(e.target.closest('[data-lvl], .coming-soon-card')));
       grid.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e.target.closest('[data-lvl]')); }
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(e.target.closest('[data-lvl], .coming-soon-card')); }
       });
     }
+
+    // Auto-scroll near the current active level card
+    requestAnimationFrame(() => {
+      const activeCard = grid.querySelector(`[data-lvl="${Math.min(unlocked, maxLvl)}"]`);
+      if (activeCard) {
+        activeCard.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    });
   }
 
   // --- Weekly Tournament (points-based: 1 point per level cleared in normal mode) ---
@@ -743,14 +844,21 @@ class ArroutApp {
       window.FirebaseSync.updateAuthUI(window.FirebaseSync.user);
     }
 
-    const targetLevel = this.unlockedLevel();
+    const targetLevel = Math.min(this.unlockedLevel(), this.maxLevel());
     const btn = document.getElementById('btn-enter-tournament');
     if (btn) {
       btn.disabled = false;
-      btn.textContent = info.isSunday ? `PLAY CAMPAIGN (LEVEL ${targetLevel})` : `PLAY NORMAL LEVELS (LEVEL ${targetLevel})`;
-      btn.onclick = () => {
-        this.navigate('puzzle', targetLevel);
-      };
+      if (this.unlockedLevel() > this.maxLevel()) {
+        btn.textContent = 'ALL LEVELS CLEARED • COMING SOON 🚀';
+        btn.onclick = () => {
+          this.showComingSoonModal();
+        };
+      } else {
+        btn.textContent = info.isSunday ? `PLAY CAMPAIGN (LEVEL ${targetLevel})` : `PLAY NORMAL LEVELS (LEVEL ${targetLevel})`;
+        btn.onclick = () => {
+          this.navigate('puzzle', targetLevel);
+        };
+      }
     }
 
     const rows = document.getElementById('tournament-leaderboard-rows');

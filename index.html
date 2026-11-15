@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#6366F1">
 <title>ARROUT — Free Arrow Escape Puzzle Game | Play Online</title>
-<meta name="description" content="Play ARROUT free online! A calm and clever arrow-escape puzzle game with 1000+ levels, weekly global tournaments, 1v1 live multiplayer duels, and daily challenges.">
+<meta name="description" content="Play ARROUT free online! A calm and clever arrow-escape puzzle game with 5000+ levels, weekly global tournaments, 1v1 live multiplayer duels, and daily challenges.">
 <meta name="keywords" content="arrout, arrow escape, arrow puzzle, puzzle games, free online games, brain games, logic puzzle, multiplayer puzzle, unblock puzzle">
 <meta name="author" content="Damayanti Technologies">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
@@ -26,7 +26,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ARROUT — Free Arrow Escape Puzzle Game">
-<meta property="og:description" content="A calm and clever arrow-escape puzzle game. Tap arrows in the right order to clear the board. 1000+ levels, weekly tournaments, and real-time 1v1 battles!">
+<meta property="og:description" content="A calm and clever arrow-escape puzzle game. Tap arrows in the right order to clear the board. 5000+ levels, weekly tournaments, and real-time 1v1 battles!">
 <meta property="og:url" content="https://arrout.damayanticrest.online/">
 <meta property="og:site_name" content="ARROUT">
 <meta property="og:image" content="https://arrout.damayanticrest.online/assets/og-banner.png">
@@ -50,7 +50,7 @@
       "@id": "https://arrout.damayanticrest.online/#website",
       "url": "https://arrout.damayanticrest.online/",
       "name": "ARROUT",
-      "description": "Free Arrow Escape Puzzle Game online with 1000+ levels, weekly global tournaments, and real-time multiplayer duels.",
+      "description": "Free Arrow Escape Puzzle Game online with 5000+ levels, weekly global tournaments, and real-time multiplayer duels.",
       "inLanguage": "en"
     },
     {
@@ -59,7 +59,7 @@
       "name": "ARROUT",
       "alternateName": "Arrow Escape",
       "url": "https://arrout.damayanticrest.online/",
-      "description": "A calm, clever arrow-escape puzzle game. Tap arrows in the right order to clear the board across 1000+ levels, weekly global tournaments, and real-time multiplayer.",
+      "description": "A calm, clever arrow-escape puzzle game. Tap arrows in the right order to clear the board across 5000+ levels, weekly global tournaments, and real-time multiplayer.",
       "genre": ["Puzzle", "Logic", "Casual", "Brain Game"],
       "gamePlatform": ["Web Browser", "Mobile Web", "Android", "iOS"],
       "applicationCategory": "GameApplication",
@@ -141,7 +141,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 #arrout-tut .tut-btn.glow:not([disabled]){animation:tutGlow 1.2s infinite}
 @keyframes tutGlow{50%{box-shadow:0 8px 30px rgba(99,102,241,.7)}}
 </style>
-<script src="levels-1000.js" defer></script>
+<script src="levels-5000.js" defer></script>
 <script src="levels-daily.js" defer></script>
 <script src="levels-room.js" defer></script>
 <script src="levels-battle.js" defer></script>
@@ -322,7 +322,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <div class="home-section-title">GAME MODES</div>
           
           <div class="home-modes-grid">
-            <!-- 1. All Levels (1000 Campaign Puzzles) -->
+            <!-- 1. All Levels (5000 Campaign Puzzles) -->
             <div class="mode-clay-card card-levels" data-nav="levels" role="button" tabindex="0">
               <div class="mode-icon-circle bg-sky">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -334,9 +334,9 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
               </div>
               <div class="mode-meta">
                 <div class="mode-title">Levels</div>
-                <div class="mode-sub">1000 Puzzles</div>
+                <div class="mode-sub">5000 Puzzles</div>
               </div>
-              <div id="home-cleared-count" class="mode-badge badge-sky">0/1000</div>
+              <div id="home-cleared-count" class="mode-badge badge-sky">0/5000</div>
             </div>
 
             <!-- 2. Daily Challenge -->
@@ -771,6 +771,28 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           🏆 +1 Weekly Tournament Point! (<span id="victory-tourney-pts">0</span> pts)
         </div>
         <button id="btn-victory-next" class="btn-primary-clay" style="margin-top: 14px;">CONTINUE</button>
+      </div>
+    </div>
+
+    <!-- Coming Soon Modal (Conquered All Levels) -->
+    <div id="modal-coming-soon" class="app-modal" role="dialog" aria-modal="true" aria-label="More Levels Coming Soon">
+      <div class="modal-clay-card" style="text-align: center; max-width: 360px; padding: 32px 24px; position: relative;">
+        <button type="button" class="promo-modal-close" id="btn-close-coming-soon" aria-label="Close" style="position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.06); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1rem; color: #4B5563;">✕</button>
+        <div style="font-size: 3.2rem; margin-bottom: 8px; filter: drop-shadow(0 4px 12px rgba(99,102,241,0.3));">🚀</div>
+        <h2 class="modal-title-serif" style="font-size: 1.45rem; color: var(--text-navy); margin-bottom: 8px;">More Levels Coming Soon!</h2>
+        <div id="coming-soon-badge" style="display: inline-block; background: #EEF2FF; border: 1px solid #C7D2FE; color: #4338CA; font-weight: 800; font-size: 0.8rem; padding: 5px 14px; border-radius: 20px; margin-bottom: 14px;">
+          ⭐ ALL LEVELS CLEARED
+        </div>
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 20px;">
+          Incredible mastery! You have successfully conquered all campaign puzzles in ARROUT.<br><br>
+          We are currently crafting brand-new shapes and levels. Your progress is saved, so you will continue seamlessly right from your next level when the update lands!
+        </p>
+        <button id="btn-coming-soon-levels" class="btn-primary-clay" style="width: 100%; margin-bottom: 8px;">
+          VIEW ALL LEVELS
+        </button>
+        <button id="btn-coming-soon-home" class="btn-back-soft" style="width: 100%; border-radius: 18px; font-size: 0.88rem; color: var(--text-muted);">
+          Back to Home
+        </button>
       </div>
     </div>
 
