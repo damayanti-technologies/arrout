@@ -179,13 +179,6 @@
       const modal = document.getElementById('modal-google-auth');
       if (!modal) return;
 
-      this.renderAccountsListUI();
-
-      const manualBox = document.getElementById('google-manual-input-box');
-      if (manualBox) manualBox.style.display = 'flex';
-      const emailInput = document.getElementById('google-custom-email');
-      if (emailInput) emailInput.value = '';
-
       modal.classList.add('open');
       this.setupModalEventListeners();
     },
@@ -272,47 +265,7 @@
         };
       }
 
-      // Direct Google email input handler
-      const customInput = document.getElementById('google-custom-email');
-      const confirmInputBtn = document.getElementById('google-confirm-input-btn');
-
-      const handleConfirmCustom = async () => {
-        if (!customInput) return;
-        const val = customInput.value.trim();
-        if (!val || !val.includes('@') || !val.includes('.')) {
-          if (window.showToast) window.showToast('Please enter a valid Google email address.');
-          return;
-        }
-        if (confirmInputBtn) {
-          confirmInputBtn.disabled = true;
-          confirmInputBtn.textContent = 'Signing in...';
-        }
-        try {
-          const namePart = val.split('@')[0].replace(/[._-]/g, ' ');
-          const capName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-          const newAcc = {
-            name: capName,
-            email: val,
-            photoURL: ''
-          };
-          this.saveGoogleAccount(newAcc);
-          await this.selectGoogleAccount(newAcc);
-        } finally {
-          if (confirmInputBtn) {
-            confirmInputBtn.disabled = false;
-            confirmInputBtn.textContent = 'Sign In';
-          }
-        }
-      };
-
-      if (confirmInputBtn) confirmInputBtn.onclick = handleConfirmCustom;
-      if (customInput) {
-        customInput.onkeydown = (e) => {
-          if (e.key === 'Enter') handleConfirmCustom();
-        };
-      }
-
-      // 'Continue with Google' button
+      // 'Sign in with Google' button
       const oauthBtn = document.getElementById('btn-trigger-oauth-popup');
       if (oauthBtn) {
         oauthBtn.onclick = () => {
@@ -517,9 +470,9 @@
         }
       }
 
-      // 2. Web Browser: Always show the in-app bottom sheet Google account modal!
-      console.log('[FirebaseSync] Opening in-app Google Sign-In bottom sheet...');
-      this.openGoogleSignInModal(onSuccessCallback);
+      // 2. Web Browser: Trigger Google Sign-In directly
+      console.log('[FirebaseSync] Triggering Google Sign-In...');
+      this.signInWithGoogleOAuth();
     },
 
     async onNativeGoogleSignInSuccess(data) {
@@ -576,10 +529,14 @@
 
     async signInWithGoogleOAuth(loginHint) {
       if (!this.auth) {
-        if (window.showToast) window.showToast('Please enter your Google email below to sign in.');
-        const input = document.getElementById('google-custom-email');
-        if (input) input.focus();
-        return;
+        if (window.showToast) window.showToast('Connecting to Google Auth...');
+        try {
+          await this.init();
+        } catch (e) {}
+        if (!this.auth) {
+          if (window.showToast) window.showToast('Google Auth is unavailable.');
+          return;
+        }
       }
 
       const provider = new firebase.auth.GoogleAuthProvider();
@@ -591,16 +548,6 @@
         const result = await this.auth.signInWithPopup(provider);
         if (result && result.user) {
           const u = result.user;
-          // Link email credential if available so both Google and email sign-in resolve to the same account
-          try {
-            if (u.email) {
-              const clean = u.email.toLowerCase().trim();
-              const secret = 'Arrout#Sync_' + btoa(clean).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) + '_Secure99!';
-              const emailCred = firebase.auth.EmailAuthProvider.credential(clean, secret);
-              await u.linkWithCredential(emailCred).catch(() => {});
-            }
-          } catch (linkErr) {}
-
           const acc = {
             name: u.displayName || (u.email ? u.email.split('@')[0] : 'Google Pilot'),
             email: u.email,
@@ -626,26 +573,23 @@
             try { cb(acc); } catch (e) {}
           }
 
-          if (window.showToast) window.showToast('Signed in as ' + (acc.name || acc.email));
+          if (window.showToast) window.showToast('Signed in with Google as ' + (acc.name || acc.email));
         }
       } catch (err) {
         console.warn('[FirebaseSync] Google popup notice:', err);
-        // CRITICAL: NEVER call signInWithRedirect! 
-        // signInWithRedirect causes third-party storage partitioning crash (missing initial state) on cross-domain hosts.
-        if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+        if (err.code === 'auth/popup-blocked') {
           if (window.showToast) {
-            window.showToast('Popup was blocked by browser. Enter your Google email below to sign in instantly.');
+            window.showToast('Popup was blocked by your browser. Tap Sign in with Google below.');
           }
-        } else if (err.code !== 'auth/popup-closed-by-user') {
+          this.openGoogleSignInModal();
+        } else if (err.code === 'auth/cancelled-popup-request') {
+          // another popup in progress
+        } else if (err.code === 'auth/popup-closed-by-user') {
+          // user closed popup
+        } else {
           if (window.showToast) {
-            window.showToast('Notice: ' + (err.message || 'Please enter email below.'));
+            window.showToast(err.message || 'Google Sign-In was cancelled.');
           }
-        }
-        const input = document.getElementById('google-custom-email');
-        if (input) {
-          if (loginHint) input.value = loginHint;
-          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          input.focus();
         }
       }
     },
