@@ -31,6 +31,7 @@ class ArroutApp {
     this.renderProfile();
     this.renderWeeklyTournament();
     this.renderDailyChallenge();
+    this.initRatingModal();
 
     // Lock scroll movement on home screen so it stays completely fixed
     const isHome = () => document.body.classList.contains('screen-home-active');
@@ -401,11 +402,20 @@ class ArroutApp {
           tourneyPoints: res.tournamentPoints,
           nextAction: () => {
             const nextLvl = Number(this.currentLevelNum) + 1;
-            if (nextLvl <= 1000) {
-              this.navigate('puzzle', nextLvl, { replace: true });
+            const proceed = () => {
+              if (nextLvl <= 1000) {
+                this.navigate('puzzle', nextLvl, { replace: true });
+              } else {
+                this.showToast('🏆 Master Champion! You cleared all 1000 levels!');
+                this.navigate('levels', null, { replace: true });
+              }
+            };
+
+            // Rating prompt after first 10 levels
+            if (this.shouldPromptRating()) {
+              this.showRatingModal(proceed);
             } else {
-              this.showToast('🏆 Master Champion! You cleared all 1000 levels!');
-              this.navigate('levels', null, { replace: true });
+              proceed();
             }
           }
         });
@@ -498,6 +508,161 @@ class ArroutApp {
       };
     }
     this.updateHUD();
+  }
+
+  // --- Play Store Rating System (Post Level 10) ---
+  initRatingModal() {
+    const modal = document.getElementById('modal-app-rating');
+    if (!modal) return;
+
+    const stars = modal.querySelectorAll('.rating-star-btn');
+    const feedback = document.getElementById('rating-stars-feedback');
+    const submitBtn = document.getElementById('btn-submit-rating');
+    const dismissBtn = document.getElementById('btn-dismiss-rating');
+
+    const feedbackTexts = {
+      1: 'Needs improvement',
+      2: 'Fair',
+      3: 'Good!',
+      4: 'Great game!',
+      5: '★★★★★ We love Arrout!'
+    };
+
+    const updateStars = (val, animate) => {
+      this._selectedStarRating = val;
+      stars.forEach(s => {
+        const sVal = Number(s.getAttribute('data-star'));
+        if (sVal <= val) {
+          s.classList.add('active');
+          if (animate && sVal === val) {
+            s.classList.remove('pop');
+            void s.offsetWidth;
+            s.classList.add('pop');
+          }
+        } else {
+          s.classList.remove('active');
+          s.classList.remove('pop');
+        }
+      });
+      if (feedback) {
+        feedback.textContent = feedbackTexts[val] || 'Tap a star to rate';
+      }
+    };
+
+    // Default to 5 stars highlighted
+    updateStars(5, false);
+
+    stars.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const starVal = Number(btn.getAttribute('data-star')) || 5;
+        if (window.soundEngine) {
+          window.soundEngine.playClick();
+          window.soundEngine.vibrate(20);
+        }
+        updateStars(starVal, true);
+
+        // Responsive flow: tapping any star triggers Play Store rating
+        setTimeout(() => {
+          this.triggerPlayStoreRating();
+        }, 360);
+      });
+    });
+
+    if (submitBtn) {
+      submitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.soundEngine) {
+          window.soundEngine.playClick();
+          window.soundEngine.vibrate(25);
+        }
+        this.triggerPlayStoreRating();
+      });
+    }
+
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.soundEngine) window.soundEngine.playClick();
+        this.dismissRatingModal();
+      });
+    }
+  }
+
+  shouldPromptRating() {
+    try {
+      if (localStorage.getItem('arrout_rated_app') === '1') return false;
+      const lvl = Number(this.currentLevelNum);
+      const postponed = localStorage.getItem('arrout_rating_postponed_lvl');
+
+      // Prompt immediately after level 10
+      if (lvl === 10) return true;
+
+      // If user skipped at 10, gently prompt again at level 25 or 50
+      if (postponed && (lvl === 25 || lvl === 50) && postponed !== String(lvl)) {
+        return true;
+      }
+
+      // If user has completed 10 or more levels in total and never rated or postponed
+      const completedCount = Object.keys(window.storageManager?.data?.completedLevels || {}).length;
+      if (completedCount >= 10 && !postponed) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  showRatingModal(onCompleteCallback) {
+    this._ratingCallback = onCompleteCallback;
+    const modal = document.getElementById('modal-app-rating');
+    if (!modal) {
+      if (onCompleteCallback) onCompleteCallback();
+      return;
+    }
+    modal.classList.add('open');
+  }
+
+  dismissRatingModal() {
+    const modal = document.getElementById('modal-app-rating');
+    if (modal) modal.classList.remove('open');
+    try {
+      localStorage.setItem('arrout_rating_postponed_lvl', String(this.currentLevelNum || 10));
+      localStorage.setItem('arrout_rating_postponed_at', Date.now().toString());
+    } catch (e) {}
+    if (this._ratingCallback) {
+      const cb = this._ratingCallback;
+      this._ratingCallback = null;
+      cb();
+    }
+  }
+
+  triggerPlayStoreRating() {
+    try {
+      localStorage.setItem('arrout_rated_app', '1');
+      localStorage.setItem('arrout_rated_at', Date.now().toString());
+    } catch (e) {}
+
+    const modal = document.getElementById('modal-app-rating');
+    if (modal) modal.classList.remove('open');
+
+    const pkg = 'com.webarrout.app';
+    try {
+      if (window.AndroidBridge && typeof window.AndroidBridge.openPlayStore === 'function') {
+        window.AndroidBridge.openPlayStore(pkg);
+      } else if (window.AndroidBridge && typeof window.AndroidBridge.openExternal === 'function') {
+        window.AndroidBridge.openExternal(`https://play.google.com/store/apps/details?id=${pkg}`);
+      } else {
+        window.open(`https://play.google.com/store/apps/details?id=${pkg}`, '_blank');
+      }
+    } catch (e) {
+      window.open(`https://play.google.com/store/apps/details?id=${pkg}`, '_blank');
+    }
+
+    this.showToast('⭐ Thank you for rating Arrout!');
+
+    if (this._ratingCallback) {
+      const cb = this._ratingCallback;
+      this._ratingCallback = null;
+      cb();
+    }
   }
 
   // --- Level Selection Screen (1000 levels, unlocked in order) ---
@@ -667,8 +832,6 @@ class ArroutApp {
   renderDailyChallenge() {
     const dateEl = document.getElementById('daily-challenge-date');
     if (dateEl) dateEl.textContent = new Date().toDateString();
-    const streakEl = document.getElementById('daily-streak-count');
-    if (streakEl) streakEl.textContent = (window.storageManager && window.storageManager.data.stats.streakDays) || 0;
   }
 
   // --- Shop (screen is built by js/themes.js) ---

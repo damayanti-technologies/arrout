@@ -82,13 +82,12 @@
   function renderDaily(app) {
     var d = new Date(), key = ymd(d), idx = dayIndex(d), e = SETS.daily.get()[idx], st = dload(); st.done = st.done || {};
     if ($('daily-challenge-date')) $('daily-challenge-date').textContent = key;
-    if ($('daily-streak-count')) $('daily-streak-count').textContent = streak(st.done);
     var info = $('daily-info');
     if (!info) { info = document.createElement('div'); info.id = 'daily-info'; info.className = 'daily-info'; var anchor = $('daily-challenge-date').nextElementSibling; anchor.parentNode.insertBefore(info, anchor); }
     var btn = $('btn-play-daily'); if (!e) { info.textContent = 'No puzzle available.'; return; }
     var did = st.done[key];
-    info.innerHTML = '<div class="di-tag">EXPERT</div><div class="di-main">' + esc(e.icon + ' ' + e.shapeName) + '</div><div class="di-sub">' + e.arrowCount + ' arrows · ' + e.cols + '×' + e.rows + ' grid</div>' +
-      (did ? '<div class="di-done">✅ Cleared today in ' + fmt(did.ms) + '. A new puzzle comes tomorrow.</div>' : '<div class="di-sub">Clear it today to grow your streak.</div>');
+    info.innerHTML = '<div class="di-main">' + esc(e.icon + ' ' + e.shapeName) + '</div><div class="di-sub">' + e.arrowCount + ' arrows · ' + e.cols + '×' + e.rows + ' grid</div>' +
+      (did ? '<div class="di-done">✅ Cleared today in ' + fmt(did.ms) + '. A new puzzle comes tomorrow.</div>' : '<div class="di-sub">Clear all arrows to solve today\'s puzzle.</div>');
     btn.textContent = did ? 'PLAY AGAIN' : "PLAY TODAY'S PUZZLE";
     btn.onclick = function () { app.navigate('puzzle', SETS.daily.base + idx); };
   }
@@ -100,12 +99,8 @@
       if (!st.maxKey || key > st.maxKey) st.maxKey = key;
       if (!clockBack && (first || !st.done[key] || ms < st.done[key].ms)) st.done[key] = { ms: ms };
       dsave(st);
-      var s = streak(st.done);
-      try { window.storageManager.data.stats.streakDays = s; window.storageManager.data.stats.lastDailyDate = key; } catch (e) {}
-      try { window.storageManager.save(); } catch (e) {}
       app.showVictoryModal({ title: 'Daily Challenge Cleared!', time: stats.totalTime + 's', moves: stats.moves,
         nextAction: function () { app.navigate('daily', null, { replace: true }); } });
-      setExtra('<div class="vx-note">🔥 Streak: ' + s + ' day' + (s === 1 ? '' : 's') + '</div>');
     };
   }
 

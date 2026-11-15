@@ -2709,3 +2709,145 @@ html[data-dark="1"] .settings-link-row:hover {
 html[data-dark="1"] .settings-link-row div[style*="var(--text-navy)"] {
   color: #E2E8F0 !important;
 }
+
+/* ===== Play Store 10-Level Rating Modal ===== */
+.rating-modal-card {
+  max-width: 360px;
+  position: relative;
+  padding: 30px 24px 24px;
+}
+
+.rating-icon-wrap {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto 12px;
+}
+
+.rating-app-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  display: block;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(239, 107, 74, 0.25);
+  border: 2px solid #FAF6F0;
+}
+
+.rating-badge-star {
+  position: absolute;
+  bottom: -4px;
+  right: -6px;
+  width: 26px;
+  height: 26px;
+  background: #FFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  animation: starPulse 2s infinite ease-in-out;
+}
+
+@keyframes starPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15) rotate(8deg); }
+}
+
+.rating-modal-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 14px;
+}
+
+.rating-stars-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 6px;
+  padding: 4px 0;
+}
+
+.rating-star-btn {
+  background: none;
+  border: none;
+  outline: none;
+  padding: 4px;
+  font-size: 2.5rem;
+  line-height: 1;
+  color: #CBD5E1;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.18s ease, text-shadow 0.18s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.rating-star-btn:hover {
+  transform: scale(1.22);
+}
+
+.rating-star-btn.active {
+  color: #F59E0B;
+  text-shadow: 0 2px 10px rgba(245, 158, 11, 0.45);
+}
+
+.rating-star-btn.pop {
+  animation: starPopAnim 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes starPopAnim {
+  0% { transform: scale(0.8); }
+  50% { transform: scale(1.35) rotate(-10deg); }
+  100% { transform: scale(1.1); }
+}
+
+.rating-feedback-text {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #D97706;
+  min-height: 20px;
+  margin-bottom: 4px;
+}
+
+.rating-playstore-btn {
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #FFF;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+  border-radius: 20px;
+}
+
+.rating-playstore-btn:hover {
+  box-shadow: 0 12px 28px rgba(16, 185, 129, 0.45);
+  transform: translateY(-1px);
+}
+
+html[data-dark="1"] .rating-modal-card {
+  background: #1E293B;
+  color: #F1F5F9;
+}
+
+html[data-dark="1"] .rating-modal-subtitle {
+  color: #94A3B8;
+}
+
+html[data-dark="1"] .rating-badge-star {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+html[data-dark="1"] .rating-star-btn {
+  color: #475569;
+}
+
+html[data-dark="1"] .rating-star-btn.active {
+  color: #FBBF24;
+  text-shadow: 0 2px 12px rgba(251, 191, 36, 0.5);
+}
+
+html[data-dark="1"] .rating-feedback-text {
+  color: #FBBF24;
+}

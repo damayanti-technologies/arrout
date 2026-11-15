@@ -68,7 +68,13 @@
     }
 
     var rateBtn = $('link-rate-playstore');
-    if (rateBtn) rateBtn.onclick = function () { openPlayStore('com.webarrout.app'); };
+    if (rateBtn) rateBtn.onclick = function () {
+      if (window.app && typeof window.app.showRatingModal === 'function') {
+        window.app.showRatingModal();
+      } else {
+        openPlayStore('com.webarrout.app');
+      }
+    };
 
     var moreAppsBtn = $('link-more-apps');
     if (moreAppsBtn) moreAppsBtn.onclick = function () { openPlayStore('com.sannivesham.app'); };

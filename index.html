@@ -354,7 +354,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
                 <div class="mode-title">Daily</div>
                 <div class="mode-sub">Fresh Puzzle</div>
               </div>
-              <div class="mode-badge badge-emerald">Streak 🔥</div>
+              <div class="mode-badge badge-emerald">Today 📅</div>
             </div>
 
             <!-- 3. Battle vs Computer AI -->
@@ -628,12 +628,9 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           <div style="font-size: 2.8rem; margin-bottom: 8px;">📅</div>
           <h2 id="daily-challenge-date" style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--text-navy); margin-bottom: 8px;">2026-10-15</h2>
           <div id="daily-info" class="daily-info"></div>
-          <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; margin-bottom: 16px;">
-            Every day brings a unique deterministic puzzle! Solve today's challenge to build and maintain your streak.
+          <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; margin-bottom: 22px;">
+            Every day brings a unique puzzle. Come back each day for a fresh new challenge!
           </p>
-          <div style="margin-bottom: 20px; font-weight: 800; color: #059669;">
-            🔥 Current Streak: <span id="daily-streak-count">0</span> Days
-          </div>
           <button id="btn-play-daily" class="btn-primary-clay" style="background: #059669;">
             PLAY TODAY'S PUZZLE
           </button>
@@ -774,6 +771,41 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
           🏆 +1 Weekly Tournament Point! (<span id="victory-tourney-pts">0</span> pts)
         </div>
         <button id="btn-victory-next" class="btn-primary-clay" style="margin-top: 14px;">CONTINUE</button>
+      </div>
+    </div>
+
+    <!-- Play Store Rating Modal (Prompted after completing Level 10) -->
+    <div id="modal-app-rating" class="app-modal" role="dialog" aria-modal="true" aria-labelledby="rating-modal-title">
+      <div class="modal-clay-card rating-modal-card">
+        <div class="rating-icon-wrap">
+          <img src="assets/logo-arrow.png" alt="Arrout" class="rating-app-logo">
+          <span class="rating-badge-star">⭐</span>
+        </div>
+        <h2 id="rating-modal-title" class="modal-title-serif" style="margin-bottom: 6px;">Enjoying Arrout?</h2>
+        <p class="rating-modal-subtitle">
+          You've cleared your first <strong>10 levels</strong>! 🎯<br>
+          Tap the stars below to rate us on Google Play — your feedback helps us craft more exciting puzzles!
+        </p>
+
+        <!-- Interactive 5-star rating bar -->
+        <div class="rating-stars-container" id="rating-stars-bar" role="radiogroup" aria-label="Rate 1 to 5 stars">
+          <button type="button" class="rating-star-btn active" data-star="1" aria-label="1 star">★</button>
+          <button type="button" class="rating-star-btn active" data-star="2" aria-label="2 stars">★</button>
+          <button type="button" class="rating-star-btn active" data-star="3" aria-label="3 stars">★</button>
+          <button type="button" class="rating-star-btn active" data-star="4" aria-label="4 stars">★</button>
+          <button type="button" class="rating-star-btn active" data-star="5" aria-label="5 stars">★</button>
+        </div>
+        <div id="rating-stars-feedback" class="rating-feedback-text">★★★★★ We love Arrout!</div>
+
+        <button id="btn-submit-rating" class="btn-primary-clay rating-playstore-btn" style="margin-top: 16px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3.609 1.814L13.793 12 3.61 22.186a2.37 2.37 0 0 1-.61-.926V2.74c.15-.365.37-.692.61-.926zm1.758-1.028l10.05 5.8-2.617 2.617-7.433-8.417zm0 22.428l7.433-8.417 2.617 2.617-10.05 5.8zm11.75-9.356l2.946-1.7a1.64 1.64 0 0 0 0-2.832l-2.946-1.7-2.336 2.336 2.336 2.896z"/>
+          </svg>
+          RATE ON GOOGLE PLAY
+        </button>
+        <button id="btn-dismiss-rating" class="btn-back-soft" style="margin-top: 10px; width: 100%; border-radius: 18px; font-size: 0.88rem; color: var(--text-muted);">
+          Maybe later
+        </button>
       </div>
     </div>
 
