@@ -41,36 +41,33 @@
       location.reload();
     });
 
-    // ---- username ----
-    var inp = $('profile-username-input'), btn = $('profile-save-name'), msg = $('profile-name-msg');
-    function current() { try { return window.storageManager.data.username || ''; } catch (e) { return ''; } }
-    function clean(v) { return v.replace(/\s+/g, ' ').trim(); }
+    // ---- display name sync (read-only) ----
+    function current() {
+      var authUser = window.FirebaseSync && window.FirebaseSync.user;
+      if (authUser && (authUser.displayName || authUser.email)) {
+        return authUser.displayName || authUser.email.split('@')[0];
+      }
+      try {
+        var u = window.storageManager.data.username;
+        if (u && u !== 'Player' && u !== 'ArrowPilot' && !u.startsWith('ArrowPilot_')) return u;
+      } catch (e) {}
+      return 'Arrow Pilot';
+    }
     function paintNames() {
       var n = current();
       document.querySelectorAll('.user-name-display').forEach(function (el) { el.textContent = n; });
-      if ($('profile-player-id')) { try { $('profile-player-id').textContent = 'ID: ' + window.storageManager.data.playerId; } catch (e) {} }
+      var pd = $('profile-display-name');
+      if (pd) pd.textContent = n;
+      var hp = $('home-player-name');
+      if (hp) hp.textContent = n;
     }
-    function fillName() { if (document.activeElement !== inp) inp.value = current(); btn.disabled = true; msg.textContent = ''; paintNames(); }
-    inp.addEventListener('input', function () {
-      var v = clean(inp.value);
-      btn.disabled = !v || v === current();
-      msg.classList.remove('err'); msg.textContent = '';
-    });
-    function saveName() {
-      var v = clean(inp.value);
-      if (v.length < 2) { msg.className = 'profile-name-msg err'; msg.textContent = 'Use at least 2 characters.'; return; }
-      try { window.storageManager.data.username = v; window.storageManager.save(); } catch (e) { msg.className = 'profile-name-msg err'; msg.textContent = 'Could not save. Try again.'; return; }
-      inp.value = v; btn.disabled = true; msg.className = 'profile-name-msg'; msg.textContent = 'Saved. Your friends will see ' + v + '.';
-      paintNames(); toast('Username saved');
-    }
-    btn.addEventListener('click', saveName);
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !btn.disabled) saveName(); });
+    paintNames();
 
-    // keep the name field fresh whenever the profile screen opens
+    // keep the name display fresh whenever the profile screen opens
     if (window.app) {
       var rp = window.app.renderProfile.bind(window.app);
-      window.app.renderProfile = function () { rp(); fillName(); };
-      fillName();
+      window.app.renderProfile = function () { rp(); paintNames(); };
+      paintNames();
       wirePause(window.app);
     }
   }

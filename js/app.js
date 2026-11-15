@@ -133,10 +133,25 @@ class ArroutApp {
   }
 
   updateHUD() {
-    const data = (window.storageManager && window.storageManager.data) || { username: 'ArrowPilot' };
-    document.querySelectorAll('.user-name-display').forEach(el => el.textContent = data.username);
-    const inp = document.getElementById('profile-username-input');
-    if (inp && document.activeElement !== inp && data.username) inp.value = data.username;
+    const authUser = (window.FirebaseSync && window.FirebaseSync.user);
+    const loggedInName = authUser ? (authUser.displayName || (authUser.email ? authUser.email.split('@')[0] : '')) : null;
+    let currentName = loggedInName || (window.storageManager && window.storageManager.data && window.storageManager.data.username) || 'Arrow Pilot';
+
+    if (!loggedInName && (!currentName || currentName === 'Player' || currentName === 'ArrowPilot' || currentName.startsWith('ArrowPilot_'))) {
+      currentName = 'Arrow Pilot';
+      if (window.storageManager && window.storageManager.data) {
+        window.storageManager.data.username = 'Arrow Pilot';
+      }
+    }
+
+    document.querySelectorAll('.user-name-display').forEach(el => el.textContent = currentName);
+    const profileDisplay = document.getElementById('profile-display-name');
+    if (profileDisplay) profileDisplay.textContent = currentName;
+
+    const homePlayer = document.getElementById('home-player-name');
+    if (homePlayer) homePlayer.textContent = currentName;
+
+    const data = (window.storageManager && window.storageManager.data) || {};
 
     // Home screen quick stats
     const cleared = this.clearedLevelNumbers().length;
@@ -144,8 +159,6 @@ class ArroutApp {
     if (homeCleared) homeCleared.textContent = `${cleared}/1000`;
     const homeStreak = document.getElementById('home-streak-count');
     if (homeStreak) homeStreak.textContent = (data.stats && data.stats.streakDays) || 0;
-    const homePlayer = document.getElementById('home-player-name');
-    if (homePlayer) homePlayer.textContent = data.username || 'Player';
   }
 
   switchScreen(screenName, levelNum = null, updateHistory = true) {
@@ -665,15 +678,15 @@ class ArroutApp {
   renderProfile() {
     const data = window.storageManager && window.storageManager.data;
     if (!data) return;
-    const st = data.stats;
-    const won = st.matchesWon || 0, lost = st.matchesLost || 0;
-    const played = won + lost;
 
-    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    set('profile-stat-clears', st.levelsCompleted || 0);
-    set('profile-stat-wins', `${won}W-${lost}L`);
-    set('profile-stat-winrate', played ? Math.round(won / played * 100) + '%' : '0%');
-    set('profile-stat-rating', data.rating || 1200);
+    const authUser = (window.FirebaseSync && window.FirebaseSync.user);
+    const loggedInName = authUser ? (authUser.displayName || (authUser.email ? authUser.email.split('@')[0] : '')) : null;
+    let currentName = loggedInName || data.username || 'Arrow Pilot';
+    if (!loggedInName && (!currentName || currentName === 'Player' || currentName === 'ArrowPilot' || currentName.startsWith('ArrowPilot_'))) {
+      currentName = 'Arrow Pilot';
+    }
+    const profileDisplay = document.getElementById('profile-display-name');
+    if (profileDisplay) profileDisplay.textContent = currentName;
 
     // Refresh Google Auth UI in Profile screen
     if (window.FirebaseSync && typeof window.FirebaseSync.updateAuthUI === 'function') {

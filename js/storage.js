@@ -39,7 +39,7 @@ class StorageManager {
     const randomId = 'AE-' + Math.floor(100000 + Math.random() * 900000);
     return {
       playerId: randomId,
-      username: 'ArrowPilot_' + randomId.slice(-4),
+      username: 'Arrow Pilot',
       rating: 1200,
       stats: {
         levelsCompleted: 0,
@@ -79,6 +79,10 @@ class StorageManager {
       const m = savedAch.get(def.id);
       return m ? { ...def, unlocked: !!m.unlocked } : { ...def };
     });
+    // Normalize default / legacy username to 'Arrow Pilot'
+    if (!merged.username || merged.username === 'Player' || merged.username === 'ArrowPilot' || merged.username.startsWith('ArrowPilot_')) {
+      merged.username = 'Arrow Pilot';
+    }
     return merged;
   }
 

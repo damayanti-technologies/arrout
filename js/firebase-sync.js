@@ -112,14 +112,19 @@
 
     async handleAuthStateChange(user) {
       if (user) {
+        const googleName = user.displayName || (user.email ? user.email.split('@')[0] : '') || 'Arrow Pilot';
         const authObj = {
           uid: user.uid,
-          displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Google Pilot'),
+          displayName: googleName,
           email: user.email,
           photoURL: user.photoURL || ''
         };
         this.user = authObj;
         authUser = authObj;
+        if (window.storageManager && window.storageManager.data) {
+          window.storageManager.data.username = googleName;
+          try { window.storageManager.save(); } catch (e) {}
+        }
         console.log('[FirebaseSync] User authenticated:', authObj.email || authObj.uid);
         this.updateAuthUI(authObj);
         await this.syncOnLogin(authObj);
@@ -130,6 +135,10 @@
           if (this._unsubRealtime) {
             try { this._unsubRealtime(); } catch (e) {}
             this._unsubRealtime = null;
+          }
+          if (window.storageManager && window.storageManager.data) {
+            window.storageManager.data.username = 'Arrow Pilot';
+            try { window.storageManager.save(); } catch (e) {}
           }
           this.updateAuthUI(null);
         }
@@ -618,6 +627,11 @@
         localStorage.removeItem('arrout_active_google_user');
       } catch (e) {}
 
+      if (window.storageManager && window.storageManager.data) {
+        window.storageManager.data.username = 'Arrow Pilot';
+        try { window.storageManager.save(); } catch (e) {}
+      }
+
       if (this.auth) {
         try {
           await this.auth.signOut();
@@ -751,9 +765,10 @@
           // 1. Rating: keep max
           local.rating = Math.max(Number(local.rating) || 1200, Number(cloud.rating) || 1200);
 
-          // 2. Username: keep Google name if local is generic or empty
-          if (user.displayName && (!local.username || local.username.startsWith('ArrowPilot_'))) {
-            local.username = user.displayName;
+          // 2. Username: always sync Google name
+          const googleName = user.displayName || (user.email ? user.email.split('@')[0] : '') || cloud.username || cloud.displayName;
+          if (googleName) {
+            local.username = googleName;
           }
 
           // 3. Completed Levels: Union of all levels cleared, keeping best time
@@ -937,6 +952,14 @@
     },
 
     updateAuthUI(user) {
+      // 0. Update display names across the app
+      const activeName = user ? (user.displayName || (user.email ? user.email.split('@')[0] : '') || 'Arrow Pilot') : 'Arrow Pilot';
+      const profNameEl = document.getElementById('profile-display-name');
+      if (profNameEl) profNameEl.textContent = activeName;
+      const homePlayer = document.getElementById('home-player-name');
+      if (homePlayer) homePlayer.textContent = activeName;
+      document.querySelectorAll('.user-name-display').forEach(el => el.textContent = activeName);
+
       // 1. Large avatar and thumbnail avatar
       const largeAvatar = document.getElementById('profile-avatar-large');
       const thumbnails = document.querySelectorAll('.user-avatar-display');

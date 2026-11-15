@@ -223,7 +223,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
                 <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/>
               </svg>
             </span>
-            <span id="home-player-name" class="home-badge-text">Player</span>
+            <span id="home-player-name" class="home-badge-text">Arrow Pilot</span>
           </button>
 
           <div class="home-top-right">
@@ -612,30 +612,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 
         <div style="background: #FFF; border-radius: 28px; padding: 22px; text-align: center; box-shadow: var(--clay-shadow); margin-bottom: 16px;">
           <div id="profile-avatar-large" style="width: 80px; height: 80px; border-radius: 50%; background: #E8EEF8; display: flex; align-items: center; justify-content: center; font-size: 2.6rem; margin: 0 auto 12px auto;">🎯</div>
-          <label for="profile-username-input" class="profile-name-label">Username</label>
-          <input id="profile-username-input" type="text" value="ArrowPilot" maxlength="16" autocomplete="off" spellcheck="false" style="background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--text-navy); font-size: 1.15rem; font-weight: 800; text-align: center; padding: 6px 14px; border-radius: 12px; margin-bottom: 8px;">
-          <div><button id="profile-save-name" class="profile-save-btn" disabled>SAVE NAME</button></div>
-          <div id="profile-name-msg" class="profile-name-msg" aria-live="polite"></div>
-          <div id="profile-player-id" style="font-size: 0.75rem; color: var(--text-muted);">ID: AE-000000</div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px;">
-          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
-            <div id="profile-stat-clears" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">0</div>
-            <div style="font-size: 0.65rem; color: var(--text-muted);">Cleared</div>
-          </div>
-          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
-            <div id="profile-stat-wins" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">0W-0L</div>
-            <div style="font-size: 0.65rem; color: var(--text-muted);">1v1 Record</div>
-          </div>
-          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
-            <div id="profile-stat-winrate" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">0%</div>
-            <div style="font-size: 0.65rem; color: var(--text-muted);">Win Rate</div>
-          </div>
-          <div style="background: #FFF; border-radius: 16px; padding: 12px 4px; text-align: center; box-shadow: var(--clay-shadow);">
-            <div id="profile-stat-rating" style="font-weight: 800; font-size: 1.05rem; color: var(--text-navy);">1200</div>
-            <div style="font-size: 0.65rem; color: var(--text-muted);">Rating</div>
-          </div>
+          <h3 id="profile-display-name" style="font-family: var(--font-serif); font-size: 1.35rem; font-weight: 800; color: var(--text-navy); margin: 6px 0 2px 0;">Arrow Pilot</h3>
         </div>
       </section>
 
@@ -970,6 +947,7 @@ html[data-dark="1"] #arrout-tut .tut-msg{color:#A9B8FF}
 <script src="js/modes.js"></script>
 <script src="js/themes.js"></script>
 <script src="js/promo.js"></script>
+<script src="js/app-links.js"></script>
 <script>
 /* ===== ARROUT first-launch tutorial (shows once, replay from Settings > How to play) ===== */
 (function () {

@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.webarrout.app",
+      "sha256_cert_fingerprints": [
+        "A6:E9:BF:3E:60:9A:1D:E2:27:2B:A2:B0:2E:B5:76:F5:ED:16:17:78:85:E5:63:4A:DA:17:E7:FE:F7:98:C5:3E",
+        "96:45:B1:71:A4:B6:F9:DF:FC:FF:1F:0D:FC:D8:FC:71:66:84:81:D5:4F:9B:3A:72:60:46:4D:EE:0F:04:D8:0C"
+      ]
+    }
+  }
+]
