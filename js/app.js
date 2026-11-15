@@ -635,7 +635,7 @@ class ArroutApp {
                 ${avatar}
                 <div style="flex:1;overflow:hidden;">
                   <div class="tourney-player-name" style="font-weight:${isMe ? '800' : '700'};font-size:0.84rem;color:var(--text-navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                    ${p.username || 'ArrowPilot'} ${isMe ? '<span style="font-size:0.72rem;color:#B45309;font-weight:800;">(You)</span>' : ''}
+                    ${p.username || 'Arrow Pilot'} ${isMe ? '<span style="font-size:0.72rem;color:#B45309;font-weight:800;">(You)</span>' : ''}
                   </div>
                   ${isChampion ? '<div style="font-size:0.68rem;color:#D97706;font-weight:800;">🏆 Weekly Champion</div>' : ''}
                 </div>

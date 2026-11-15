@@ -16,9 +16,14 @@
   function toast(m) { if (window.showToast) window.showToast(m); }
   function hash(str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function myName() {
+    var authUser = window.FirebaseSync && window.FirebaseSync.user;
+    if (authUser && (authUser.displayName || authUser.email)) {
+      return authUser.displayName || authUser.email.split('@')[0];
+    }
     var n = '';
     try { n = (window.storageManager && window.storageManager.data && window.storageManager.data.username) || ''; } catch (e) {}
-    return n && n !== 'ArrowPilot' ? n : (n || 'Player') + ' ' + (100 + Math.floor(Math.random() * 900));
+    if (n && n !== 'ArrowPilot' && !n.startsWith('ArrowPilot_') && n !== 'Player') return n;
+    return 'Arrow Pilot';
   }
 
   /* ---------- transport ---------- */

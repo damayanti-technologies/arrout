@@ -77,7 +77,7 @@ class TournamentManager {
       const db = firebase.firestore();
       const sm = window.storageManager;
       const uid = authUser.uid;
-      const username = authUser.displayName || authUser.email || (sm && sm.data && sm.data.username) || 'ArrowPilot';
+      const username = authUser.displayName || (authUser.email ? authUser.email.split('@')[0] : '') || (sm && sm.data && sm.data.username) || 'Arrow Pilot';
       const photoURL = authUser.photoURL || '';
       const weekId = (sm && sm.data && sm.data.tournamentWeekId) || this.getCurrentWeekId();
       const pts = Number(points !== undefined ? points : (sm && sm.data && sm.data.tournamentPoints) || 0);

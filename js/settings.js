@@ -41,6 +41,47 @@
       location.reload();
     });
 
+    // ---- External Links and Play Store Navigation ----
+    function openExternal(url) {
+      if (!url) return;
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.openExternal === 'function') {
+          window.AndroidBridge.openExternal(url);
+          return;
+        }
+        if (window.AndroidBridge && typeof window.AndroidBridge.openUrl === 'function') {
+          window.AndroidBridge.openUrl(url);
+          return;
+        }
+      } catch (e) {}
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function openPlayStore(pkg) {
+      try {
+        if (window.AndroidBridge && typeof window.AndroidBridge.openPlayStore === 'function') {
+          window.AndroidBridge.openPlayStore(pkg);
+          return;
+        }
+      } catch (e) {}
+      openExternal('https://play.google.com/store/apps/details?id=' + (pkg || 'com.webarrout.app'));
+    }
+
+    var rateBtn = $('link-rate-playstore');
+    if (rateBtn) rateBtn.onclick = function () { openPlayStore('com.webarrout.app'); };
+
+    var moreAppsBtn = $('link-more-apps');
+    if (moreAppsBtn) moreAppsBtn.onclick = function () { openPlayStore('com.sannivesham.app'); };
+
+    var webBtn = $('link-website');
+    if (webBtn) webBtn.onclick = function () { openExternal('https://damayanticrest.online'); };
+
+    var privBtn = $('link-privacy');
+    if (privBtn) privBtn.onclick = function () { openExternal('https://arrout.damayanticrest.online/privacy-policy/'); };
+
+    var contactBtn = $('link-contact');
+    if (contactBtn) contactBtn.onclick = function () { openExternal('mailto:contact@damayanticrest.online'); };
+
     // ---- display name sync (read-only) ----
     function current() {
       var authUser = window.FirebaseSync && window.FirebaseSync.user;

@@ -80,7 +80,7 @@
         this.auth.onAuthStateChanged(user => {
           if (user) {
             this.saveGoogleAccount({
-              name: user.displayName || (user.email ? user.email.split('@')[0] : 'Google Pilot'),
+              name: user.displayName || (user.email ? user.email.split('@')[0] : 'Arrow Pilot'),
               email: user.email || 'Google Account',
               photoURL: user.photoURL || '',
               uid: user.uid
@@ -570,7 +570,7 @@
         if (result && result.user) {
           const u = result.user;
           const acc = {
-            name: u.displayName || (u.email ? u.email.split('@')[0] : 'Google Pilot'),
+            name: u.displayName || (u.email ? u.email.split('@')[0] : 'Arrow Pilot'),
             email: u.email,
             photoURL: u.photoURL || '',
             uid: u.uid
@@ -899,8 +899,8 @@
         } catch (e) {}
 
         const profileData = {
-          displayName: String(this.user.displayName || local.username || 'ArrowPilot').slice(0, 100),
-          username: String(local.username || 'ArrowPilot').slice(0, 50),
+          displayName: String(this.user.displayName || local.username || 'Arrow Pilot').slice(0, 100),
+          username: String(local.username || 'Arrow Pilot').slice(0, 50),
           playerId: String(local.playerId || 'AE-000000').slice(0, 50),
           rating: Number(local.rating) || 1200
         };
@@ -911,7 +911,7 @@
           userId: this.user.uid,
           coins: 0,
           rating: Number(local.rating) || 1200,
-          username: String(this.user.displayName || local.username || 'ArrowPilot').slice(0, 50),
+          username: String(this.user.displayName || local.username || 'Arrow Pilot').slice(0, 50),
           playerId: String(local.playerId || 'AE-000000').slice(0, 50),
           profile: profileData,
           stats: {
@@ -1000,7 +1000,7 @@
                   ${user.photoURL ? `<img src="${user.photoURL}" style="width: 100%; height: 100%; object-fit: cover;">` : (user.displayName || user.email || 'G').charAt(0).toUpperCase()}
                 </div>
                 <div style="flex: 1; overflow: hidden;">
-                  <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-navy);">${user.displayName || 'Google Pilot'}</div>
+                  <div style="font-weight: 800; font-size: 0.92rem; color: var(--text-navy);">${user.displayName || (user.email ? user.email.split('@')[0] : 'Arrow Pilot')}</div>
                   <div style="font-size: 0.76rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${user.email || ''}</div>
                 </div>
               </div>
@@ -1071,7 +1071,7 @@
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="font-size: 1.1rem;">👤</span>
                 <div style="font-size: 0.8rem; color: #3730A3;">
-                  Connected: <b>${user.displayName || 'Google Pilot'}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
+                  Connected: <b>${user.displayName || (user.email ? user.email.split('@')[0] : 'Arrow Pilot')}</b> <span style="font-size: 0.74rem; opacity: 0.85;">(${user.email || ''})</span>
                 </div>
               </div>
               <span style="font-size: 0.68rem; font-weight: 700; color: #15803D; background: #DCFCE7; padding: 2px 7px; border-radius: 8px;">

@@ -2698,3 +2698,14 @@ html:not([data-dark="1"]) .share-preview-copy-btn {
 html:not([data-dark="1"]) .share-app-label {
   color: #374151;
 }
+
+html[data-dark="1"] .settings-link-row {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+}
+html[data-dark="1"] .settings-link-row:hover {
+  background: #273548 !important;
+}
+html[data-dark="1"] .settings-link-row div[style*="var(--text-navy)"] {
+  color: #E2E8F0 !important;
+}
